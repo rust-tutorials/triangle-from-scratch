@@ -1,26 +1,22 @@
 
 # Triangle From Scratch
 
-This is a series on how to draw a triangle without using any outside crates.
+This is an educational series about drawing a triangle without using any outside crates.
 
-> Specifically, we can only put a crate into the `[dependencies]`
-> section of `Cargo.toml` if it's a crate that we wrote ourselves,
-> as part of this project.
+Specifically, the rules are:
 
-This means two things:
+1) We can only put a crate into the `[dependencies]` section of `Cargo.toml` if it's a crate that we wrote ourselves, as part of this project.
+2) We **can** still use Rust's standard library. Since all Rust programs can import from the standard library without a `[dependencies]` entry, it's fair game.
 
-1) We **can** still use Rust's Standard Library.
-2) We'll have to write all our own operating system bindings.
+Without any external crates, we'll have to write our own operating system bindings.
+It's not difficult code to write, there's just a lot of background details you need to understand first.
+That's where most of our focus will go, on learning how that works.
+There's a lot less focus spent on the literal "triangle drawing" part, which is usually fairly easy.
 
-Which means that the project will end up being a lot *less* about the specific
-final step of drawing a triangle with GL (or whatever graphics API), and a lot
-*more* about how to do general things like:
+Expected subjects include:
 
 * Reading OS documentation (which usually assumes you're programming in C).
 * Understanding the C header files that describe the OS's public API.
 * Writing appropriate "raw" Rust bindings to that public API.
 * Creating ergonomic wrapper functions to make the API easily used with the rest of Rust.
-* Having those wrapper functions be fully safe (in the Rust sense) when possible,
-  or at least making them as error-proof as we can.
-
-Drawing a triangle just gives us a long term goal that's easy to understand.
+* Having those wrapper functions be fully safe (in the Rust sense) when possible, or at least making them as error-proof as we can.
