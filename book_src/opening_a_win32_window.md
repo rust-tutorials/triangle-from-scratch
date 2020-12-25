@@ -984,4 +984,591 @@ And, finally, we can get a window to flicker on the screen!
 
 ## Handling Window Messages
 
-https://docs.microsoft.com/en-us/windows/win32/learnwin32/window-messages
+We're on to the next page of the tutorial!
+
+Now we get to learn all about [Window Messages](https://docs.microsoft.com/en-us/windows/win32/learnwin32/window-messages)
+
+First we need to define this great `MSG` struct:
+```cpp
+typedef struct tagMSG {
+  HWND   hwnd;
+  UINT   message;
+  WPARAM wParam;
+  LPARAM lParam;
+  DWORD  time;
+  POINT  pt;
+  DWORD  lPrivate;
+} MSG, *PMSG, *NPMSG, *LPMSG;
+```
+
+In Rust:
+```rust
+#[repr(C)]
+pub struct MSG {
+  hwnd: HWND,
+  message: UINT,
+  wParam: WPARAM,
+  lParam: LPARAM,
+  time: DWORD,
+  pt: POINT,
+  lPrivate: DWORD,
+}
+unsafe_impl_default_zeroed!(MSG);
+```
+Hey look, we have nearly all of that defined already.
+
+```rust
+type LONG = c_long;
+type c_long = i32;
+#[repr(C)]
+pub struct POINT {
+  x: LONG,
+  y: LONG,
+}
+unsafe_impl_default_zeroed!(POINT);
+```
+
+And now we can get our window messages.
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
+  pub fn GetMessageW(
+    lpMsg: LPMSG, hWnd: HWND, wMsgFilterMin: UINT, wMsgFilterMax: UINT,
+  ) -> BOOL;
+}
+```
+
+We have to get them in a loop of course, because we'll be getting a whole lot of them.
+```rust
+let mut msg = MSG::default();
+loop {
+  let message_return = unsafe { GetMessageW(&mut msg, null_mut(), 0, 0) };
+  if message_return == 0 {
+    break;
+  } else if message_return == -1 {
+    let last_error = unsafe { GetLastError() };
+    panic!("Error with `GetMessageW`, error code: {}", last_error);
+  }
+}
+```
+
+Except we're missing [TranslateMessage](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
+and [DispatchMessageW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dispatchmessagew).
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`TranslateMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
+  pub fn TranslateMessage(lpMsg: *const MSG) -> BOOL;
+
+  /// [`DispatchMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dispatchmessagew)
+  pub fn DispatchMessageW(lpMsg: *const MSG) -> LRESULT;
+}
+```
+
+There's a lot of good info on the page about window messages,
+but that's all we have to do here in terms of our code.
+
+By now, our program can open a window.
+However, we also see an eternally spinning mouse once it's open.
+We also *don't* see our program close when we close the window.
+It just continues to spin in the `loop`,
+and we have to exit it by pressing Ctrl+C in the command line.
+
+## Writing The Window Procedure
+
+Next up is [Writing the Window Procedure](https://docs.microsoft.com/en-us/windows/win32/learnwin32/writing-the-window-procedure).
+
+That default window procedure we've been using so far is fine for most events.
+Usually it just ignores every event.
+However, a few event types can't just be ignored.
+One of them is that window closing situation.
+Another is that thing with the mouse cursor.
+
+If we look at MSDN page for the [WM_CLOSE](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-close)
+message, we can see that we'll need to be able to use [DestroyWindow](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+and [PostQuitMessage](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage).
+
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+  pub fn DestroyWindow(hWnd: HWND) -> BOOL;
+
+  /// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
+  pub fn PostQuitMessage(nExitCode: c_int);
+}
+```
+
+And we have to write our own procedure.
+This time, no panics.
+```rust
+pub unsafe extern "system" fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -> LRESULT {
+  0
+}
+```
+
+There's a few different ways we can arrange the branching here,
+and it comes down to taste in the end,
+but most of the messages should return 0 when you've processed them.
+We'll assume that 0 is the "normal" response and build our setup around that.
+
+```rust
+pub unsafe extern "system" fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -> LRESULT {
+  match Msg {
+    WM_CLOSE => DestroyWindow(hWnd),
+    WM_DESTROY => PostQuitMessage(0),
+    _ => return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+```
+One little problem here is that `DestroyWindow` and `PostQuitMessage` have different return types.
+Even though we're ignoring the output of `DestroyWindow`, it's a type error to have it like this.
+
+```rust
+pub unsafe extern "system" fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -> LRESULT {
+  match Msg {
+    WM_CLOSE => {
+      DestroyWindow(hWnd);
+    }
+    WM_DESTROY => PostQuitMessage(0),
+    _ => return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+```
+Ehhhhhh, I'm not sure if I'm a fan of rustfmt making it look like that.
+
+```rust
+pub unsafe extern "system" fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -> LRESULT {
+  match Msg {
+    WM_CLOSE => drop(DestroyWindow(hWnd)),
+    WM_DESTROY => PostQuitMessage(0),
+    _ => return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+```
+Oh, yeah, that's the good stuff.
+We can use `drop` to throw away the `i32` value,
+so we don't need the `;` and braces,
+so rustfmt keeps it on a single line.
+I am *all about* that compact code stuff.
+
+Now we can open the window and click for it to close and the program actually terminates.
+
+## Fixing The Cursor (maybe?)
+
+The mouse cursor is still kinda funky.
+It gets kinda... *stuck* with different icons.
+If you move the mouse into the window area from different sides,
+the little "adjust window size" cursors don't change to the normal cursor once the mouse is in the middle of the window.
+That's mostly our fault, we left the cursor for our Window Class as null.
+
+Instead, if we use [LoadCursorW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw)
+we can assign a cursor to our window class,
+and then the default window procedure will set the cursor to be the right image at the right time.
+
+We're supposed to call it with something like:
+```rust
+wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+```
+
+And the extern function is easy to do:
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`LoadCursorW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw)
+  pub fn LoadCursorW(hInstance: HINSTANCE, lpCursorName: LPCWSTR) -> HCURSOR;
+}
+```
+
+But how do we make that `IDC_ARROW` thing?
+In the docs for [LoadCursorW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw)
+they're all listed as `MAKEINTRESOURCE(number)`.
+Okay so we look up [MAKEINTRESOURCEW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
+and... it's a C macro. Blast.
+Okay so we can't link to it and call it,
+instead we'll have to grep the windows includes to see what's happening.
+```
+C:\Program Files (x86)\Windows Kits\10\Include>rg "#define MAKEINTRESOURCE"
+10.0.16299.0\um\WinUser.h
+215:#define MAKEINTRESOURCEA(i) ((LPSTR)((ULONG_PTR)((WORD)(i))))
+216:#define MAKEINTRESOURCEW(i) ((LPWSTR)((ULONG_PTR)((WORD)(i))))
+218:#define MAKEINTRESOURCE  MAKEINTRESOURCEW
+220:#define MAKEINTRESOURCE  MAKEINTRESOURCEA
+
+10.0.16299.0\shared\ks.h
+4464:#define MAKEINTRESOURCE( res ) ((ULONG_PTR) (USHORT) res)
+```
+Hm, so.. the input value is cast to a `WORD`,
+then cast directly to a `ULONG_PTR`,
+then cast directly to a string pointer (either ansi or wide).
+That's not too hard at all.
+
+We *could* do this as a Rust macro,
+but I feel like we might want to use a `const fn` instead.
+I just like having the types be a little more checked when possible.
+```rust
+type LPWSTR = *mut WCHAR;
+type ULONG_PTR = usize;
+/// [`MAKEINTRESOURCEW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
+pub const fn MAKEINTRESOURCEW(i: WORD) -> LPWSTR {
+  i as ULONG_PTR as LPWSTR
+}
+const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
+```
+
+Did that fix it?
+Huh. Nope.
+
+Sometimes you're really sure that you know what's wrong,
+it's just obvious,
+but you didn't know at all and you basically wasted your time.
+This is frustrating, but it's okay.
+Happens to all of us.
+Oh well.
+
+I've heard that the mouse cursor sometimes is heuristic in Windows,
+and once Windows thinks that your app is behaving properly,
+it'll run the mouse cursor better for you.
+Maybe if we add more to our program it'll start working right.
+
+## Painting The Window
+
+The tutorial wants to tell us about [Painting The Window](https://docs.microsoft.com/en-us/windows/win32/learnwin32/painting-the-window) next.
+
+So we have to accept a `WM_PAINT` message:
+```rust
+const WM_PAINT: u32 = 0x000F;
+```
+And then do a little dance with a `PAINTSTRUCT`,
+as well as the additional types it depends on:
+```rust
+#[repr(C)]
+pub struct PAINTSTRUCT {
+  hdc: HDC,
+  fErase: BOOL,
+  rcPaint: RECT,
+  fRestore: BOOL,
+  fIncUpdate: BOOL,
+  rgbReserved: [BYTE; 32],
+}
+unsafe_impl_default_zeroed!(PAINTSTRUCT);
+type HDC = HANDLE;
+type BYTE = u8;
+#[repr(C)]
+pub struct RECT {
+  left: LONG,
+  top: LONG,
+  right: LONG,
+  bottom: LONG,
+}
+unsafe_impl_default_zeroed!(RECT);
+```
+This is all becoming routine by now, I hope.
+
+They want us to use [BeginPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint),
+then FillRect](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect) on the whole canvas,
+then [EndPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint).
+Sounds easy enough to do.
+
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`BeginPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint)
+  pub fn BeginPaint(hWnd: HWND, lpPaint: LPPAINTSTRUCT) -> HDC;
+
+  /// [`FillRect`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+  pub fn FillRect(hDC: HDC, lprc: *const RECT, hbr: HBRUSH) -> c_int;
+
+  /// [`EndPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+  pub fn EndPaint(hWnd: HWND, lpPaint: *const PAINTSTRUCT) -> BOOL;
+}
+const COLOR_WINDOW: u32 = 5;
+```
+The `COLOR_WINDOW` constant I had to look up in the headers.
+
+Now we adjust the window procedure a bit to do the painting:
+```rust
+pub unsafe extern "system" fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -> LRESULT {
+  match Msg {
+    WM_CLOSE => drop(DestroyWindow(hWnd)),
+    WM_DESTROY => PostQuitMessage(0),
+    WM_PAINT => {
+      let mut ps = PAINTSTRUCT::default();
+      let hdc = BeginPaint(hWnd, &mut ps);
+      let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+      EndPaint(hWnd, &ps);
+    }
+    _ => return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+```
+
+Window looks the same as before,
+but if we fiddle with the brush value we can see it'll draw using other colors.
+Doesn't seem to fix the mouse though.
+
+## Closing The Window
+
+The tutorial page about [Closing The Window](https://docs.microsoft.com/en-us/windows/win32/learnwin32/closing-the-window)
+has a fun part where we can open a message box.
+I like the occasional message box, let's do that.
+
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`MessageBoxW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messageboxw)
+  pub fn MessageBoxW(
+    hWnd: HWND, lpText: LPCWSTR, lpCaption: LPCWSTR, uType: UINT,
+  ) -> c_int;
+}
+const MB_OKCANCEL: u32 = 1;
+const IDOK: c_int = 1;
+```
+
+So here's a fun question, how do we decide when a constant should be `u32` or `c_int` or whatever type of int?
+The correct answer is that there's no correct answer.
+I just pick based on how I see the API using it most of the time.
+That is, if it's a `const` that gets compared to a return from a function,
+we use the function's return type.
+If it's a `const` we pass to a function, we use the function's argument type.
+Sometimes a value will be used as more than one type of number, then you'll have to just pick one.
+In C the number types can just automatically convert, so they don't really care.
+In Rust, that's not the case, so I just try to pick a default type for the value.
+So that most of the time I can write `MY_CONST` and not `MY_CONST as _`.
+
+## Managing Application State
+
+Ah, we're back to a slightly tricky part of things.
+In [Managing Application State](https://docs.microsoft.com/en-us/windows/win32/learnwin32/managing-application-state-)
+we get some notions thrown around like "use just global variables until it gets too complicated!"
+Well, no thanks MSDN. I'll go directly to the stage where there's no global variables.
+
+First, we need to be ready to handle `WM_NCCREATE` and `WM_CREATE`:
+```rust
+const WM_NCCREATE: u32 = 0x0081;
+const WM_CREATE: u32 = 0x0001;
+```
+
+And we check for them in our window procedure:
+```rust
+  match Msg {
+    WM_NCCREATE => {
+      println!("NC Create");
+      return 1;
+    }
+    WM_CREATE => println!("Create"),
+```
+
+Let's see those messages print out...
+```
+D:\dev\triangle-from-scratch>cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.59s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+thread 'main' panicked at 'Failed to create a window.', src\main.rs:53:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+```
+Nani!?
+Something already went wrong.
+Better check the full docs for [WM_NCCREATE](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-nccreate).
+Ah, see, it's right there.
+
+> Return Value: If an application processes this message, it should return TRUE to continue creation of the window.
+> If the application returns FALSE, the CreateWindow or CreateWindowEx function will return a NULL handle.
+
+Okay, so far all of our messages have asked us to just *always* return 0 when the message was handled,
+and this is the first message we've been handling that we had to decide to return 0 or not.
+Well, right now our window creation should always proceed, so here we go:
+```rust
+WM_NCCREATE => {
+  println!("NC Create");
+  return 1;
+}
+```
+
+And give this a test now:
+```
+D:\dev\triangle-from-scratch>cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.64s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+Create
+```
+Naisu!
+
+Hey, better check on [WM_CREATE](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-create)
+to see if it has any return stuff we just got right on accident:
+
+> **Return value:** If an application processes this message, it should return zero to continue creation of the window.
+> If the application returns –1, the window is destroyed and the CreateWindowEx or CreateWindow function returns a NULL handle.
+
+Ah, yeah, we were getting it right sorta on accident.
+Gotta always read those docs.
+
+Okay now we continue the tutorial:
+
+> The last parameter of CreateWindowEx is a pointer of type `void*`.
+> You can pass any pointer value that you want in this parameter.
+> When the window procedure handles the `WM_NCCREATE` or `WM_CREATE` message,
+> it can extract this value from the message data.
+
+Right, so, we have to have a void pointer to pass to the message.
+Uh, just to pick something, let's pass our message a pointer to the number 5.
+
+```rust
+let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+let hwnd = unsafe {
+  CreateWindowExW(
+    0,
+    sample_window_class_wn.as_ptr(),
+    sample_window_name_wn.as_ptr(),
+    WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    null_mut(),
+    null_mut(),
+    hInstance,
+    lparam.cast(),
+  )
+};
+```
+
+So we're making a boxed `i32`,
+then we leak the box because we don't want Rust to drop this box based on scope.
+Instead, we'll clean up the box as part of the window destruction.
+
+> When you receive the `WM_NCCREATE` and `WM_CREATE` messages,
+> the lParam parameter of each message is a pointer to a `CREATESTRUCT` structure.
+
+The `CREATESTRUCT` type has `A` and `W` forms.
+Since we're using `CreateWindowExW`, we'll assume that we use `CREATESTRUCTW` here.
+```rust
+#[repr(C)]
+pub struct CREATESTRUCTW {
+  lpCreateParams: LPVOID,
+  hInstance: HINSTANCE,
+  hMenu: HMENU,
+  hwndParent: HWND,
+  cy: c_int,
+  cx: c_int,
+  y: c_int,
+  x: c_int,
+  style: LONG,
+  lpszName: LPCWSTR,
+  lpszClass: LPCWSTR,
+  dwExStyle: DWORD,
+}
+unsafe_impl_default_zeroed!(CREATESTRUCTW);
+```
+
+Now we can get out the boxed pointer thing from the create struct:
+```rust
+WM_NCCREATE => {
+  println!("NC Create");
+  let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
+  if createstruct.is_null() {
+    return 0;
+  }
+  let boxed_i32_ptr: *mut i32 = (*createstruct).lpCreateParams.cast();
+  return 1;
+}
+```
+
+And then we use [SetWindowLongPtrW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+to connect this create struct pointer to the window itself.
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+  pub fn SetWindowLongPtrW(
+    hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR,
+  ) -> LONG_PTR;
+}
+const GWLP_USERDATA: c_int = -21;
+```
+And it's fairly simple to call, but we have to put a manual cast to `LONG_PTR` in:
+```rust
+WM_NCCREATE => {
+  println!("NC Create");
+  let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
+  if createstruct.is_null() {
+    return 0;
+  }
+  let boxed_i32_ptr = (*createstruct).lpCreateParams;
+  SetWindowLongPtrW(hWnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
+  return 1;
+}
+```
+
+And then we can use [GetWindowLongPtrW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
+to get our windows's custom user data:
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
+  pub fn GetWindowLongPtrW(hWnd: HWND, nIndex: c_int) -> LONG_PTR;
+}
+```
+
+Now, uh, we'll print out the current value or something.
+I guess, each time we go to `WM_PAINT` we'll print the value and add 1 to it.
+Just any old thing to see that it's working.
+
+```rust
+WM_PAINT => {
+  let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+  println!("Current ptr: {}", *ptr);
+  *ptr += 1;
+  let mut ps = PAINTSTRUCT::default();
+  let hdc = BeginPaint(hWnd, &mut ps);
+  let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+  EndPaint(hWnd, &ps);
+}
+```
+
+That'll print 5, and then if you force a bunch of paint messages you can see it count up.
+The easiest way to do that is to adjust the window's size so that it's small,
+then drag it to be bigger.
+Each time the window's size expands it triggers new paint messages.
+
+Of course, we also can't forget that cleanup code we promised.
+The way we do the cleanup is to just turn the raw pointer back into a `Box<i32>`.
+The drop code for the Box type will handle the rest for us.
+Of course, we should only do this right as the window is being destroyed.
+```rust
+WM_DESTROY => {
+  let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+  Box::from_raw(ptr);
+  println!("Cleaned up the box.");
+  PostQuitMessage(0);
+}
+```
+
+And finally, I think we're done!
+
+## Hey, What About The Triangle?
+
+Well, there's several ways to draw a triangle in windows.
+You can use DirectX, OpenGL, Vulkan, probably some other ways I don't even know about.
+This lesson is going to stop at *just* the window creation part.
+Then, each other lesson on a particular Windows drawing API can assume you've read this as a baseline level of understanding.
