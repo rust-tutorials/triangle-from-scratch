@@ -1,0 +1,14 @@
+[book]
+title = "Triangle From Scratch"
+authors = ["Lokathor"]
+description = "A tutorial for drawing a triangle without any outside crates."
+language = "en"
+multilingual = false
+src = "book_src"
+
+[rust]
+edition = "2018"
+
+[build]
+build-dir = "target/book_out"
+create-missing = false
