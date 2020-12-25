@@ -1,4 +1,4 @@
 
 [Introduction](introduction.md)
 
-* [Win32 Window](win32_window.md)
+* [Opening a Win32 Window](opening_a_win32_window.md)
