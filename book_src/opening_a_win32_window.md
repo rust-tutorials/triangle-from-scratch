@@ -96,10 +96,10 @@ Let's take it one part at a time.
   This is really good, because writing out all the fields any time we just want to talk about the type is just a pain.
 * `*PWNDCLASSW, *NPWNDCLASSW, *LPWNDCLASSW;` these are more aliases as well.
   The `*` makes these pointer types, so a `PWNDCLASSW` is the same as `struct tagWNDCLASSW { ... } *` or `WNDCLASSW*`.
-  The prefixes on each name variant stand for "Pointer", "Narrow Pointer", and "Long Pointer".
-  This is mostly legacy stuff from when computers didn't have much memory and people tried to save memory by having smaller pointer types and bigger pointer types.
-  These days we have enough computer memory to keep things simply and only have one type of pointer.
-  The names are still around for legacy compatability.
+  The prefixes on each name variant stand for "Pointer", "Near Pointer", and "Long Pointer".
+  Long ago when computers had segmented memory there were differences in the pointer types.
+  These days computers aren't set up for that, so they're all just a normal pointer.
+  The different names are still around for legacy compatability.
 
 ### Starting Our Rust Code
 
