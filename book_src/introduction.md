@@ -1,4 +1,6 @@
 
+[GitHub Repo](https://github.com/rust-tutorials/triangle-from-scratch)
+
 # Triangle From Scratch: Introduction
 
 This is an educational series about drawing a triangle without using any outside crates.
