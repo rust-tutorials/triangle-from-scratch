@@ -246,7 +246,7 @@ The <code>*</code> makes these pointer types, so a <code>PWNDCLASSW</code> is th
 The prefixes on each name variant stand for &quot;Pointer&quot;, &quot;Narrow Pointer&quot;, and &quot;Long Pointer&quot;.
 This is mostly legacy stuff from when computers didn't have much memory and people tried to save memory by having smaller pointer types and bigger pointer types.
 These days we have enough computer memory to keep things simply and only have one type of pointer.
-Still, the names are still around for legacy compatability.</li>
+The names are still around for legacy compatability.</li>
 </ul>
 <h3><a class="header" href="#starting-our-rust-code" id="starting-our-rust-code">Starting Our Rust Code</a></h3>
 <p>I think we've got enough on our plate to start writing things down in Rust.</p>
@@ -390,8 +390,8 @@ so I'm leaving this bit in here.)</li>
 <pre><code class="language-c">LRESULT WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 </code></pre>
 <p>Oh, hey, <em>we can almost read that</em>.
-It helps to know are that C puts the output type on the left,
-and also the function argument types are on the left.
+It helps to remember that C puts the function output type to the left of the function's name,
+and also the function argument types are to the left of each argument name.
 When we think back to how strut fields were declared,
 this is all fairly consistent.</p>
 <p>The final <em>very</em> important thing to know is that C function pointers are nullable,
