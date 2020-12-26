@@ -1,0 +1,1815 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Opening a Win32 Window - Triangle From Scratch</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="opening_a_win32_window.html" class="active"><strong aria-hidden="true">1.</strong> Opening a Win32 Window</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Triangle From Scratch</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#opening-a-win32-window" id="opening-a-win32-window">Opening a Win32 Window</a></h1>
+<p>Alright, if we wanna draw a triangle, we have to have a window to draw the triangle in.</p>
+<p>Uh, how do we do that? For the sake of the lesson, let's imagine I don't know how to do that.</p>
+<h2><a class="header" href="#search-the-web" id="search-the-web">Search The Web</a></h2>
+<p>Okay so we don't know what to do, let's ask the internet nicely.
+Something like <a href="https://duckduckgo.com/?q=open+a+window+win32">&quot;open a window win32&quot;</a> sounds right.
+Hey look, that <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">first result</a> is straight from Microsoft.
+It's a whole little tutorial on how to open a window.
+Perfect, just what we wanted.</p>
+<h2><a class="header" href="#starting-the-win32-windowing-tutorial" id="starting-the-win32-windowing-tutorial">Starting The Win32 Windowing Tutorial</a></h2>
+<p>Alright, let's read the first paragraph of the <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
+that we just found...</p>
+<p>To summarize the opening portion:</p>
+<ul>
+<li>Every window needs a window class.</li>
+<li>A window class is registered with the OS at runtime.</li>
+<li>We need to fill in a <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa">WNDCLASSA</a> (or <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">WNDCLASSW</a>)</li>
+</ul>
+<p>Whoa, slow down, hold on, what's this structure thing? And why are there two versions?</p>
+<h3><a class="header" href="#ansi-and-wide" id="ansi-and-wide">ANSI and Wide</a></h3>
+<p>All over the Win32 API you'll find stuff where there's an <code>A</code> version and a <code>W</code> version.
+This happens with functions that process textual data, as well as with structs associated with those functions.
+In this case of <code>WNDCLASSA</code> / <code>WNDCLASSW</code>, a window class has, as part of it, a menu name as well as a class name.
+These names are textual, and so we get both an <code>A</code> and a <code>W</code> version.</p>
+<p>The <code>A</code> and <code>W</code> letters come from the two types of string that the windows API lets you use: ANSI strings and &quot;wide&quot; strings&quot;.</p>
+<ul>
+<li>ANSI strings use C's <code>char</code> type.
+They don't have a specified encoding.
+If you store anything other than ASCII data in an ANSI string, the results vary based on context.</li>
+<li>Wide strings use C's <code>wchar_t</code> type.
+These strings are UTF-16 encoded.
+This gives you consistent results while using all the world's writing systems.</li>
+</ul>
+<h4><a class="header" href="#what-does-this-mean-for-us-rust-users" id="what-does-this-mean-for-us-rust-users">What does this mean for us Rust users?</a></h4>
+<p>Well, Rust string literals, and Rust's normal <code>String</code> and <code>&amp;str</code> types, are all UTF-8 encoded.
+This means there's a bit of a mismatch between what Windows expects and what we've usually got.</p>
+<p>UTF-8 is a <em>superset</em> of ASCII.
+This means that any ASCII-only string can be stored compatibly inside a UTF-8 string.
+So if we only want to use ASCII data the normal <code>String</code> and <code>&amp;str</code> types will be (mostly) compatible with <code>A</code>-type operations.</p>
+<p>On the other hand, ASCII is pretty limited.
+Most languages of the world aren't representable with only ASCII text.
+You get English, Latin, Esperanto, Klingon, but the list runs out quick after that.
+Even English doesn't get all of its fancy typographical marks in an ASCII-only context:
+ellipses (…), “angled quotes”, different length dashes (– / —), and so on.</p>
+<p>So we really want to be using these <code>W</code>-type operations.
+This means that we have to convert UTF-8 over to UTF-16.
+Oh, hey, look, <a href="https://doc.rust-lang.org/std/primitive.str.html#method.encode_utf16">that's in the standard library</a>, isn't it neat?
+The only slight problem is that we can't use that in a <code>const</code> context (yet).
+It's not the worst to do a little runtime data mucking here and there, so we'll accept the overhead.
+The UTF-16 conversion is kinda just an &quot;unfortunate but accepted&quot; part of working with Windows.</p>
+<h3><a class="header" href="#reading-a-c-struct-declaration" id="reading-a-c-struct-declaration">Reading a C struct declaration</a></h3>
+<p>Okay, so now we've picked that we're going to use <code>WNDCLASSW</code>.
+Let's look at the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">MSDN definition</a>:</p>
+<pre><code class="language-c">typedef struct tagWNDCLASSW {
+  UINT      style;
+  WNDPROC   lpfnWndProc;
+  int       cbClsExtra;
+  int       cbWndExtra;
+  HINSTANCE hInstance;
+  HICON     hIcon;
+  HCURSOR   hCursor;
+  HBRUSH    hbrBackground;
+  LPCWSTR   lpszMenuName;
+  LPCWSTR   lpszClassName;
+} WNDCLASSW, *PWNDCLASSW, *NPWNDCLASSW, *LPWNDCLASSW;
+</code></pre>
+<p>Oh, gross, what the heck?
+What's going on here?
+Let's take it one part at a time.</p>
+<ul>
+<li><code>typedef</code> says that we're making a &quot;type definition&quot;.
+The way it works is that first you give a base type, and then you list one or more other names you want to have as aliases.</li>
+<li><code>struct tagWNDCLASSW</code> this names the first type, that we're making the aliases for.</li>
+<li><code>{ ... }</code> the part in braces lists the fields of the struct.
+Each line has the field's type, then the name of the field, then a <code>;</code></li>
+<li><code>WNDCLASSW,</code> is the first alias we're making.
+From now on, if you refer to a <code>WNDCLASSW</code>, then it's the same as if you'd referred to the whole <code>struct tagWNDCLASSW { ... }</code> declaration.
+This is really good, because writing out all the fields any time we just want to talk about the type is just a pain.</li>
+<li><code>*PWNDCLASSW, *NPWNDCLASSW, *LPWNDCLASSW;</code> these are more aliases as well.
+The <code>*</code> makes these pointer types, so a <code>PWNDCLASSW</code> is the same as <code>struct tagWNDCLASSW { ... } *</code> or <code>WNDCLASSW*</code>.
+The prefixes on each name variant stand for &quot;Pointer&quot;, &quot;Narrow Pointer&quot;, and &quot;Long Pointer&quot;.
+This is mostly legacy stuff from when computers didn't have much memory and people tried to save memory by having smaller pointer types and bigger pointer types.
+These days we have enough computer memory to keep things simply and only have one type of pointer.
+Still, the names are still around for legacy compatability.</li>
+</ul>
+<h3><a class="header" href="#starting-our-rust-code" id="starting-our-rust-code">Starting Our Rust Code</a></h3>
+<p>I think we've got enough on our plate to start writing things down in Rust.</p>
+<pre><code>Microsoft Windows [Version 10.0.19041.685]
+(c) 2020 Microsoft Corporation. All rights reserved.
+
+D:\dev\triangle-from-scratch&gt;cargo init --bin
+     Created binary (application) package
+
+D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.65s
+     Running `target\debug\triangle-from-scratch.exe`
+Hello, world!
+</code></pre>
+<p>Great.
+Later on we'll put some of this into a library,
+sort it into modules,
+all that sort of housekeeping stuff.
+For now, we'll just write into <code>main.rs</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+struct WNDCLASSW {
+  style: UINT,
+  lpfnWndProc: WNDPROC,
+  cbClsExtra: int,
+  cbWndExtra: int,
+  hInstance: HINSTANCE,
+  hIcon: HICON,
+  hCursor: HCURSOR,
+  hbrBackground: HBRUSH,
+  lpszMenuName: LPCWSTR,
+  lpszClassName: LPCWSTR,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Oh, excellent, and we're sure to put that little <code>repr(C)</code> at the top.
+This makes sure it has the right <a href="https://doc.rust-lang.org/reference/type-layout.html">memory layout</a> for interacting with foreign code.</p>
+<p>Let's give that a try:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+error[E0412]: cannot find type `UINT` in this scope
+ --&gt; src\main.rs:9:10
+  |
+9 |   style: UINT,
+  |          ^^^^ not found in this scope
+
+error[E0412]: cannot find type `WNDPROC` in this scope
+  --&gt; src\main.rs:10:16
+   |
+10 |   lpfnWndProc: WNDPROC,
+   |                ^^^^^^^ not found in this scope
+
+...you get the idea
+</code></pre>
+<p>Okay, so, that should be obvious enough in terms of the error message.
+We can't declare a struct to have fields with types Rust doesn't know about.
+It's just not gonna fly.</p>
+<h3><a class="header" href="#how-big-is-an-int" id="how-big-is-an-int">How Big Is An Int?</a></h3>
+<p>Okay, start with just the first field on the list of missing types.
+Another web search for <a href="https://duckduckgo.com/?q=msdn+uint">&quot;msdn uint&quot;</a>,
+and we find a handy page of <a href="https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types">Windows Data Types</a>.</p>
+<pre><code>UINT: An unsigned INT. The range is 0 through 4294967295 decimal.
+
+This type is declared in WinDef.h as follows:
+
+typedef unsigned int UINT;
+</code></pre>
+<p>Alright, closer to an answer.
+Now we just ask <a href="https://duckduckgo.com/?q=how+big+is+an+int+on+windows">&quot;how big is an int on windows&quot;</a>,
+which doesn't have any pages that immediately look useful.
+What if we ask <a href="https://duckduckgo.com/?q=how+big+is+an+int+on+windows+msdn">&quot;how big is an int on windows msdn&quot;</a>?
+Ah, here we go, <a href="https://docs.microsoft.com/en-us/cpp/cpp/data-type-ranges">Data Type Ranges</a>
+gives us all the info we need about the size of different C types.</p>
+<p>An <code>unsigned int</code> is 4 bytes, so in Rust terms it's a <code>u32</code>.
+We could call our type <code>unsigned_int</code>, but the rust convention is to give C types a <code>c_</code> prefix, and also to just say <code>u</code> for &quot;unsigned&quot;.
+In other words, <code>unsigned int</code> in C becomes <a href="https://doc.rust-lang.org/std/os/raw/type.c_uint.html">c_uint</a> in the Rust convention.
+There's no strong reason to <em>not</em> keep with this naming convention, so we'll go with that.</p>
+<p>Now we can add definitions that get us up to <code>UINT</code>,
+and we can do signed ints as well while we're at it:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+struct WNDCLASSW {
+  style: UINT,
+  lpfnWndProc: WNDPROC,
+  cbClsExtra: c_int,
+  cbWndExtra: c_int,
+  hInstance: HINSTANCE,
+  hIcon: HICON,
+  hCursor: HCURSOR,
+  hbrBackground: HBRUSH,
+  lpszMenuName: LPCWSTR,
+  lpszClassName: LPCWSTR,
+}
+type UINT = c_uint;
+type c_uint = u32;
+type c_int = i32;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Three of the fields aren't underlined in red already!</p>
+<h3><a class="header" href="#reading-a-c-function-declaration" id="reading-a-c-function-declaration">Reading a C function declaration</a></h3>
+<p>Now we <a href="https://duckduckgo.com/?q=WNDPROC+msdn">look up WNDPROC</a>,
+which is a <a href="https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633573(v=vs.85)">WindowProc callback function</a>:</p>
+<pre><code class="language-c">LRESULT CALLBACK WindowProc(
+  _In_ HWND   hwnd,
+  _In_ UINT   uMsg,
+  _In_ WPARAM wParam,
+  _In_ LPARAM lParam
+);
+</code></pre>
+<p>Oh, no, we're back to the weird stuff again!</p>
+<p>Really, it's not too bad.
+We do need a few hints though:</p>
+<ul>
+<li><code>_In_</code> is just a note on the intended usage of that function argument.
+It's a C macro which gets replaced with nothing later on, so it's basically a code comment.
+These arguments move data &quot;in&quot; to the function.
+Sometimes there's &quot;out&quot; arguments,
+or even &quot;in-out&quot; arguments.
+We'll worry about those later.</li>
+<li><code>CALLBACK</code> is a C macro that gets replaced with the &quot;callback&quot; ABI attribute.
+In this case, that's <code>__stdcall</code>.
+How do I know that?
+Well, I had to look directly in the windows include files.
+Unfortunate, but occasionally necessary.
+If you have visual studio installed, it should be in something like <code>C:\Program Files (x86)\Windows Kits\10\Include\10.0.16299.0</code>.
+Then I just did a grep to look for <code>CALLBACK</code> and looked around.
+Lots of false hits, but the only one where <code>CALLBACK</code> gets defined as a function attribute is
+<code>127:#define CALLBACK    __stdcall</code>, so that's our winner.
+(NOTE: later on I found that <code>CALLBACK</code> is discussed on the
+<a href="https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types">Windows Data Types</a> page,
+so it's much less mysterious than I thought at first.
+Still, it's good to have a note on where to find the headers,
+so I'm leaving this bit in here.)</li>
+</ul>
+<p>Alright, get that junk out of the way and what do we see?</p>
+<pre><code class="language-c">LRESULT WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+</code></pre>
+<p>Oh, hey, <em>we can almost read that</em>.
+It helps to know are that C puts the output type on the left,
+and also the function argument types are on the left.
+When we think back to how strut fields were declared,
+this is all fairly consistent.</p>
+<p>The final <em>very</em> important thing to know is that C function pointers are nullable,
+while Rust <code>fn</code> pointers are always non-null.
+If we want to have a nullable value on the Rust side,
+we have to use <code>Option&lt;fn()&gt;</code> instead of just <code>fn()</code>.</p>
+<p>So let's finally add that <code>WNDPROC</code> definition:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type WNDPROC = Option&lt;
+  unsafe extern &quot;system&quot; fn(
+    hwnd: HWND,
+    uMsg: UINT,
+    wParam: WPARAM,
+    lParam: LPARAM,
+  ) -&gt; LRESULT,
+&gt;;
+<span class="boring">}
+</span></code></pre></pre>
+<p>VS Code says we're at 12 errors. Not so bad.</p>
+<h3><a class="header" href="#void-pointers" id="void-pointers">Void Pointers</a></h3>
+<p>Now that we understand what we're supposed to be doing,
+it's just a matter of filling in definition after definition until all the errors go away.
+A lot of them are over on that <a href="https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types">Windows Data Types</a> page,
+so we don't even have to look too many places.</p>
+<p>Next up is <code>HINSTANCE</code>:</p>
+<pre><code>HINSTANCE: A handle to an instance. This is the base address of the module in memory.
+
+HMODULE and HINSTANCE are the same today, but represented different things in 16-bit Windows.
+
+This type is declared in WinDef.h as follows:
+
+typedef HANDLE HINSTANCE;
+</code></pre>
+<p>So</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type HINSTANCE = HANDLE;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Next, <code>HANDLE</code>:</p>
+<pre><code>HANDLE: A handle to an object.
+
+This type is declared in WinNT.h as follows:
+
+typedef PVOID HANDLE;
+</code></pre>
+<p>This is where it gets interesting, because now we need to have <code>PVOID</code>:</p>
+<pre><code>PVOID: A pointer to any type.
+
+This type is declared in WinNT.h as follows:
+
+typedef void *PVOID;
+</code></pre>
+<p>Remember that the <code>*</code> after the type makes it a pointer variant of the type.
+It also has the <code>P</code> prefix we saw before.</p>
+<p>The <code>void</code> type name in C performs a sort of double duty,
+but in Rust we actually don't see it very often.</p>
+<ul>
+<li>When <code>void</code> is used as a <em>return type</em> it means that there's no return value from a function.
+In Rust we instead use the <code>()</code> type for functions that return nothing.</li>
+<li>When <code>void</code> is used as a <em>pointer target type</em> it means that the pointer points to just some opaque memory.
+In Rust, we don't really care for mysterious opaque memory,
+and we have generics,
+so we essentially never end up using void pointers.</li>
+</ul>
+<p>Because the <code>void*</code> type (and the <code>const void *</code> type) are the special memory handling types in C,
+LLVM has particular knowledge and opinions about how they work.
+To ensure that Rust has the correct type mapping for void pointers,
+there's a <a href="https://doc.rust-lang.org/core/ffi/enum.c_void.html">c_void</a> type provided in the standard library.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type PVOID = *mut core::ffi::c_void;
+<span class="boring">}
+</span></code></pre></pre>
+<h3><a class="header" href="#pointer-sized-types" id="pointer-sized-types">Pointer Sized Types</a></h3>
+<p>As we proceed down the list of errors,
+filling them in one at a time,
+things are fairly simple based on what we know to do so far,
+and we get this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type HICON = HANDLE;
+type HCURSOR = HICON;
+type HBRUSH = HANDLE;
+type LPCWSTR = *const WCHAR;
+type WCHAR = wchar_t;
+type wchar_t = u16;
+type HWND = HANDLE;
+type WPARAM = UINT_PTR;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then we get to <code>UINT_PTR</code>, which has a slightly funny description:</p>
+<pre><code>UINT_PTR: An unsigned INT_PTR.
+
+This type is declared in BaseTsd.h as follows:
+
+// C++
+#if defined(_WIN64)
+ typedef unsigned __int64 UINT_PTR;
+#else
+ typedef unsigned int UINT_PTR;
+#endif
+</code></pre>
+<p>Hmm, a little confusing.
+So far the types haven't cared about the architecture size.
+Maybe something is up.
+Let's see what <code>INT_PTR</code> says:</p>
+<pre><code>INT_PTR	
+A signed integer type for pointer precision. Use when casting a pointer to an integer to perform pointer arithmetic.
+
+This type is declared in BaseTsd.h as follows:
+
+// C++
+#if defined(_WIN64) 
+ typedef __int64 INT_PTR; 
+#else 
+ typedef int INT_PTR;
+#endif
+</code></pre>
+<p>Ah ha, so <code>INT_PTR</code> is the signed integer type used for <em>pointer arithmetic</em>,
+and <code>UINT_PTR</code> is the unsigned version of course.
+Well, if they're for pointer math, that's why they care about the size of a pointer.
+If you know your Rust types then you already know what we need to use.
+That's right, <code>isize</code> and <code>usize</code>.
+They're naturally the size of a pointer, and there's the signed and unsigned variants and everything.</p>
+<p>And now we can finally get no errors with our struct declaration!</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type c_int = i32;
+type c_uint = u32;
+type HANDLE = PVOID;
+type HBRUSH = HANDLE;
+type HCURSOR = HICON;
+type HICON = HANDLE;
+type HINSTANCE = HANDLE;
+type HWND = HANDLE;
+type LONG_PTR = isize;
+type LPARAM = LONG_PTR;
+type LPCWSTR = *const WCHAR;
+type LRESULT = LONG_PTR;
+type PVOID = *mut core::ffi::c_void;
+type UINT = c_uint;
+type UINT_PTR = usize;
+type WCHAR = wchar_t;
+type wchar_t = u16;
+type WPARAM = UINT_PTR;
+
+type WNDPROC = Option&lt;
+  unsafe extern &quot;system&quot; fn(
+    hwnd: HWND,
+    uMsg: UINT,
+    wParam: WPARAM,
+    lParam: LPARAM,
+  ) -&gt; LRESULT,
+&gt;;
+
+#[repr(C)]
+pub struct WNDCLASSW {
+  style: UINT,
+  lpfnWndProc: WNDPROC,
+  cbClsExtra: c_int,
+  cbWndExtra: c_int,
+  hInstance: HINSTANCE,
+  hIcon: HICON,
+  hCursor: HCURSOR,
+  hbrBackground: HBRUSH,
+  lpszMenuName: LPCWSTR,
+  lpszClassName: LPCWSTR,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Phew.</p>
+<h2><a class="header" href="#continuing-the-windowing-tutorial" id="continuing-the-windowing-tutorial">Continuing The Windowing Tutorial</a></h2>
+<p>I don't know if you recall,
+but like a decade ago when this article started we had a <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
+that we were working on.</p>
+<h3><a class="header" href="#making-a-wndclassw-value" id="making-a-wndclassw-value">Making a <code>WNDCLASSW</code> value</a></h3>
+<p>It says that we need to fill in the window procedure, the hinstance, and the class name.
+The other stuff is optional, but those are essential.</p>
+<p>In the sample C++ code, we see this interesting line:</p>
+<pre><code class="language-cpp">WNDCLASS wc = { };
+</code></pre>
+<p>That's a little odd looking, it might not be obvious what's happening.
+It's declaring a variable <code>wc</code>, of type <code>WNDCLASS</code>, and then zeroing the entire struct.
+Keeping in mind that <code>WNDCLASS</code> is an alias for either <code>WNDCLASSA</code> or <code>WNDCLASSW</code>,
+depending on how you're building the C++ program,
+and also keeping in mind that we're always going to be using the <code>W</code> versions of things,
+then the equivalent Rust would be something like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut wc: WNDCLASSW = unsafe { core::mem::zeroed() };
+<span class="boring">}
+</span></code></pre></pre>
+<p>We haven't even called the OS and we've already got <code>unsafe</code> stuff going on.</p>
+<p>But... does this need to be <code>unsafe</code> that everyone thinks about?
+Is this the kind of unsafe action that we need to evaluate the correctness of every type we do it?
+No, not at all.
+It's always safe to make a default <code>WNDCLASSW</code> by zeroing the memory.
+We know that right now, and that doesn't change based on the situation.
+So we'll just give a <code>Default</code> impl to our type that does this for us.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl Default for WNDCLASSW {
+  #[inline]
+  #[must_use]
+  fn default() -&gt; Self {
+    unsafe { core::mem::zeroed() }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In fact, this is going to be true for all the foreign C structs we declare.
+We'll just make a macro to handle this for us consistently.
+When you're making a lot of bindings by hand, consistency is king.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>macro_rules! unsafe_impl_default_zeroed {
+  ($t:ty) =&gt; {
+    impl Default for $t {
+      #[inline]
+      #[must_use]
+      fn default() -&gt; Self {
+        unsafe { core::mem::zeroed() }
+      }
+    }
+  };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>&quot;Lokathor, why did you put unsafe in that macro name? Default isn't an unsafe trait.&quot;
+Good question.
+It's because the macro <em>could</em> be used improperly.
+The <code>unsafe</code> block around the call to <code>zeroed</code> tells the compiler &quot;no, hush, it's fine, I checked.&quot;
+So if you were to use the macro to make a <code>Default</code> impl for a type that can't be safely zeroed,
+then you'd sure have a problem on your hand.</p>
+<p>Any time a macro hides away some sort of unsafe thing, you should put unsafe in the name.
+It's a simple convention, but it keeps it obvious that the macro can go wrong if misused.</p>
+<p>Now our rust can look like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut wc = WNDCLASSW::default();
+<span class="boring">}
+</span></code></pre></pre>
+<p>And that's so much nicer, at least to my eyes.</p>
+<h3><a class="header" href="#writing-a-window-procedure" id="writing-a-window-procedure">Writing a Window Procedure</a></h3>
+<p>The guide says</p>
+<blockquote>
+<p>We'll examine the window procedure in detail later. For now, just treat this as a forward reference.</p>
+</blockquote>
+<p>So, for now we'll just make a dummy window procedure that panics if it's actually called.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>unsafe extern &quot;system&quot; fn dummy_window_procedure(
+  hwnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  unimplemented!()
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we can start filling in the <code>wc</code> value:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = todo!();
+  wc.lpszClassName = todo!();
+}
+</code></pre></pre>
+<h3><a class="header" href="#getting-the-hinstance" id="getting-the-hinstance">Getting the HINSTANCE</a></h3>
+<p>This next part is a hair tricky to solve on your own.</p>
+<p>What the tutorial wants us to do is pass the <code>hInstance</code> value that we were given at the start of the <code>WinMain</code> function.
+Except the problem is that we're not writing a Windows C++ program so we don't have a WinMain function at all.
+We're writing a Rust program, and the Rust program starts at <code>fn main()</code>, with no instance argument.</p>
+<p>If we just ask the internet about <a href="https://duckduckgo.com/?q=msdn+get+my+instance">&quot;msdn get my instance&quot;</a>
+then there's not too much help.
+However, if we phrase it more like <a href="https://duckduckgo.com/?q=msdn+get+my+hinstance+c%2B%2B">&quot;msdn get my hinstance c++&quot;</a>
+then there's a lovely <a href="https://stackoverflow.com/questions/1749972/determine-the-current-hinstance">StackOverflow</a>
+asking about this very situation.
+If we call <code>GetModuleHandle(NULL)</code> we can get the <code>HINSTANCE</code> of our exe.</p>
+<p>Interestingly, one of the comments on the question also says that we can just plain pass <code>NULL</code> as our instance value and it'll be fine.
+However, the MSDN tutorial says to pass an <code>HINSTANCE</code>,
+and this pushes us to learn a bit and try a new thing,
+so we'll at least try the <code>GetModuleHandle</code> way first.</p>
+<p>If we look up <code>GetModuleHandle</code>, we see that it has an <code>A</code>-form and <code>W</code>-form, since it takes a name, and the name is textual.
+We want to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew">GetModuleHandleW</a>, as discussed.</p>
+<blockquote>
+<p>If this parameter is NULL, GetModuleHandle returns a handle to the file used to create the calling process (.exe file).</p>
+</blockquote>
+<p>Sounds good.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = GetModuleHandleW(core::ptr::null());
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = todo!();
+}
+</code></pre></pre>
+<p>Well, obviously this won't work, but let's check that error message for fun:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+error[E0425]: cannot find function, tuple struct or tuple variant `GetModuleHandleW` in this scope
+  --&gt; src\main.rs:18:19
+   |
+18 |   let hInstance = GetModuleHandleW(core::ptr::null());
+   |                   ^^^^^^^^^^^^^^^^ not found in this scope
+</code></pre>
+<p>Okay, so we need to declare the function before we can use it.
+We do this with an <a href="https://doc.rust-lang.org/reference/items/external-blocks.html">external block</a>.</p>
+<p>An external block just declares the signature of a function, like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>extern ABI {
+  fn NAME1(args) -&gt; output;
+  
+  fn NAME2(args) -&gt; output;
+
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The actual function is &quot;external&quot; to the program.
+To perform compilation, all the compiler really needs is the correct function signature.
+This allows it to perform type checking, and ensure the correct call ABI is used.
+Later on, the linker sorts it all out.
+If it turns out that a function can't be linked after all,
+you get a link error rather than a compile error.</p>
+<p>But who tells the linker what to link with to find the external functions?
+Well, you can use a build script, or you can put it right on the extern block.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;LibraryName&quot;)]
+extern ABI {
+  fn NAME1(args) -&gt; output;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>If the library is some sort of common system library that the linker will already know about,
+then it's perfectly fine to just use the attribute.
+In other cases, like if a library name varies by operating system, you might need the build script.</p>
+<p>Where do we find <code>GetModuleHandleW</code> though?
+MSDN tells us right there on the page.
+If we look in the <strong>Requirements</strong> section we'll see:</p>
+<blockquote>
+<p>DLL:	Kernel32.dll</p>
+</blockquote>
+<p>So in our Rust we have our declaration like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;Kernel32&quot;)]
+extern &quot;system&quot; {
+  /// [`GetModuleHandleW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew)
+  pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -&gt; HMODULE;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And now we can call <code>GetModuleHandleW</code> without error (if we put an <code>unsafe</code> block around the call):</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(core::ptr::null()) };
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = todo!();
+}
+</code></pre></pre>
+<h3><a class="header" href="#wide-strings" id="wide-strings">Wide Strings</a></h3>
+<p>The last thing we need is one of those fancy <code>LPCWSTR</code> things.
+A &quot;long pointer to a C-style wide string&quot;.
+Well a long pointer is just a pointer.
+And a wide string, to Windows, means a UTF-16 string.
+The only thing we haven't mentioned yet is the C-style thing.</p>
+<p>There's two basic ways to handle strings.</p>
+<ul>
+<li>&quot;Null terminated&quot;, where the string is just a pointer, but it isn't allowed to contain 0.
+To determine the string's length you have to walk the string until you see a 0, and that's the end of the string.</li>
+<li>&quot;ptr+len&quot;, where the string is a pointer and a length, and the string can contain any value.
+To determine the length, you just check the length value.</li>
+</ul>
+<p>Rust uses the ptr+len style for strings, as well as for slices in general.
+C and C++ use the null terminated style for strings.</p>
+<p>It's not <em>too</em> difficult to convert a ptr+len string into a null terminated string,
+but it's also not entirely free.
+Pushing an extra 0 onto the end of the string is only cheap if there's spare capacity to do it.
+In the case of string literals, for example,
+you'd have to allocate a separate string, because the literal is kept in read-only memory.</p>
+<p>The basic form of this is very simple code:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Turns a Rust string slice into a null-terminated utf-16 vector.
+pub fn wide_null(s: &amp;str) -&gt; Vec&lt;u16&gt; {
+  s.encode_utf16().chain(Some(0)).collect()
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>.encode_utf16()</code> makes the basic encoding iterator,
+then <code>.chain(Some(0))</code> puts a 0 on the end of the iteration,
+and we just <code>.collect()</code> it into a totally normal <code>Vec&lt;u16&gt;</code>.</p>
+<p>Long term, if we were using a lot of UTF-16,
+we might want to build a way to have these &quot;C wide strings&quot; computed as compile time and stored as literals.
+It lets the program allocate a little less as it performs its startup stuff.
+However, the code for that is a little hairy, and a bit of a side story compared to the current goal.</p>
+<p>Soooo.... we can just write it like this, right?</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(core::ptr::null()) };
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  // BAD, WRONG, NO
+  wc.lpszClassName = wide_null(&quot;Sample Window Class&quot;).as_ptr();
+}
+</code></pre></pre>
+<p>Ah, we can't do that!
+This is a classic beginner's mistake, but it must be avoided.</p>
+<p>If we wrote it like that, the vec of utf-16 would get allocated, then we'd call <code>as_ptr</code>,
+assign that pointer to <code>wc.lpszClassName</code>, and then... the expression would end.
+And the vector would drop, and clean up, and deallocate the memory we wanted to point to.
+We'd have a dangling pointer, horrible.
+Maybe it'd even sometimes work anyway.
+The allocator might not re-use the memory right away, so it might still hold useful data for a while.
+It's still some nasty Undefined Behavior though.</p>
+<p>Here's the correct way to do it:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(core::ptr::null()) };
+  let sample_window_class_wn = wide_null(&quot;Sample Window Class&quot;);
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+}
+</code></pre></pre>
+<p>This way, the <code>sample_window_class_wn</code> binding holds the vector live,
+and the pointer can be used for as long as that binding lasts.
+In this case, to the end of the <code>main</code> function.</p>
+<h3><a class="header" href="#registering-the-window-class" id="registering-the-window-class">Registering The Window Class</a></h3>
+<p>Okay, so our widow class request is all filled out, we just have to register it using <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw">RegisterClassW</a>:</p>
+<pre><code class="language-cpp">ATOM RegisterClassW(
+  const WNDCLASSW *lpWndClass
+);
+</code></pre>
+<p>And in Rust:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type ATOM = WORD;
+type WORD = c_ushort;
+type c_ushort = u16;
+#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`RegisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw)
+  pub fn RegisterClassW(lpWndClass: *const WNDCLASSW) -&gt; ATOM;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>It's a little weird sometimes to see that the <code>const</code> and <code>*</code> part are &quot;around&quot; the target type in C,
+and then both on the same side of the type in Rust,
+but that's genuinely the correct translation.</p>
+<p>So now we can make the register call:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(core::ptr::null()) };
+  let sample_window_class_wn = wide_null(&quot;Sample Window Class&quot;);
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+
+  unsafe { RegisterClassW(&amp;wc) };
+}
+</code></pre></pre>
+<p>But we don't know if it worked or not.
+Almost any call to the operating system can fail.
+Cosmic rays and stuff.
+If we check the <strong>Return value</strong> part of the MSDN page it says:</p>
+<blockquote>
+<p>If the function fails, the return value is zero. To get extended error information, call <code>GetLastError</code>.</p>
+</blockquote>
+<p>Hmm, let's check <a href="https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>,
+that sounds like a thing we'll want to use a lot.</p>
+<p>yada yada... thead local error code...
+yada yada... some functions set an error code and <em>then</em> succeed...
+okay... &quot;To obtain an error string for system error codes, use the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessage">FormatMessage</a> function.&quot;
+Oof, we'd have a whole extra layer to dive into if we went down that path.
+&quot;For a complete list of error codes provided by the operating system, see <a href="https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes">System Error Codes</a>.&quot;
+Okay, well that's not too bad.
+For now, we can show an error code and then look it up by hand.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type DWORD = c_ulong;
+type c_ulong = u32;
+#[link(name = &quot;Kernel32&quot;)]
+extern &quot;system&quot; {
+  /// [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror)
+  pub fn GetLastError() -&gt; DWORD;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And now we have basic error checking / reporting:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(core::ptr::null()) };
+  let sample_window_class_wn = wide_null(&quot;Sample Window Class&quot;);
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(dummy_window_procedure);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+
+  let atom = unsafe { RegisterClassW(&amp;wc) };
+  if atom == 0 {
+    let last_error = unsafe { GetLastError() };
+    panic!(&quot;Could not register the window class, error code: {}&quot;, last_error);
+  }
+}
+</code></pre></pre>
+<h2><a class="header" href="#creating-the-window" id="creating-the-window">Creating The Window</a></h2>
+<p>VS Code says I'm at like 4500 words already, and we haven't even made our Window yet.</p>
+<blockquote>
+<p>To create a new instance of a window, call the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw">CreateWindowEx</a> function:</p>
+</blockquote>
+<p>Okay, sure, that'll be nice and easy, no proble--</p>
+<pre><code class="language-cpp">HWND CreateWindowExW(
+  DWORD     dwExStyle,
+  LPCWSTR   lpClassName,
+  LPCWSTR   lpWindowName,
+  DWORD     dwStyle,
+  int       X,
+  int       Y,
+  int       nWidth,
+  int       nHeight,
+  HWND      hWndParent,
+  HMENU     hMenu,
+  HINSTANCE hInstance,
+  LPVOID    lpParam
+);
+</code></pre>
+<p>oof!</p>
+<p>Okay, actually most of these we've seen before.
+This is getting easier the more we do.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type HMENU = HANDLE;
+type LPVOID = *mut core::ffi::c_void;
+#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`CreateWindowExW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw)
+  pub fn CreateWindowExW(
+    dwExStyle: DWORD, lpClassName: LPCWSTR, lpWindowName: LPCWSTR,
+    dwStyle: DWORD, X: c_int, Y: c_int, nWidth: c_int, nHeight: c_int,
+    hWndParent: HWND, hMenu: HMENU, hInstance: HINSTANCE, lpParam: LPVOID,
+  ) -&gt; HWND;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<blockquote>
+<p><code>CreateWindowEx</code> returns a handle to the new window, or zero if the function fails.
+To show the window—that is, make the window visible —pass the window handle to the
+<a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow">ShowWindow</a> function</p>
+</blockquote>
+<p>Hey, look, the MSDN docs are using some of that extended typography we mentioned before.</p>
+<p>Apparently we want our window creation to look something like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let sample_window_name_wn = wide_null(&quot;Sample Window Name&quot;);
+let hwnd = unsafe {
+  CreateWindowExW(
+    0,
+    sample_window_class_wn.as_ptr(),
+    sample_window_name_wn.as_ptr(),
+    WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    core::ptr::null_mut(),
+    core::ptr::null_mut(),
+    hInstance,
+    core::ptr::null_mut(),
+  )
+};
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now we just have to define <code>WS_OVERLAPPEDWINDOW</code> and <code>CW_USEDEFAULT</code>.
+These are defined in the header files as C macro values, which expand to literals.
+In Rust, we <em>could</em> define them as macros, but it'd be a little silly.
+We probably want to define them as <code>const</code> values instead.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const WS_OVERLAPPED: u32 = 0x00000000;
+const WS_CAPTION: u32 = 0x00C00000;
+const WS_SYSMENU: u32 = 0x00080000;
+const WS_THICKFRAME: u32 = 0x00040000;
+const WS_MINIMIZEBOX: u32 = 0x00020000;
+const WS_MAXIMIZEBOX: u32 = 0x00010000;
+const WS_OVERLAPPEDWINDOW: u32 = WS_OVERLAPPED
+  | WS_CAPTION
+  | WS_SYSMENU
+  | WS_THICKFRAME
+  | WS_MINIMIZEBOX
+  | WS_MAXIMIZEBOX;
+const CW_USEDEFAULT: c_int = 0x80000000_u32 as c_int;
+<span class="boring">}
+</span></code></pre></pre>
+<p>There's more <code>WS_</code> values you could define, but that's enough to start.</p>
+<p>Oh, and heck, we probably want to just import <code>null</code> and <code>null_mut</code> since we'll be using them a lot.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use core::ptr::{null, null_mut};
+<span class="boring">}
+</span></code></pre></pre>
+<p>For calling <code>ShowWindow</code>, we have a <code>HWND</code> already,
+but the show parameter is apparently another one of those WinMain arguments.
+Instead we'll just look at the list of what the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow">ShowWindow</a>
+docs say, and I guess we can pick <code>SW_SHOW</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const SW_SHOW: c_int = 5;
+type BOOL = c_int;
+#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`ShowWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow)
+  pub fn ShowWindow(hWnd: HWND, nCmdShow: c_int) -&gt; BOOL;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Okay, now we can at least make the window and the program will close.
+We expect it to like, flicker on screen really fast and then disappear, or something.</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.60s
+     Running `target\debug\triangle-from-scratch.exe`
+thread 'main' panicked at 'not implemented', src\main.rs:60:3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 0xc0000409, STATUS_STACK_BUFFER_OVERRUN)
+</code></pre>
+<p>Whoops!
+Haha, remember how we had that dummy window procedure?
+It's actually <em>not</em> supposed to panic and unwind the stack during the callback.
+Bad things end up happening.
+We just did it to fill in a little bit so the compiler would be cool.</p>
+<p>Now that we're tying to turn on the program on for real (even for a second),
+we need a real window procedure.
+But we don't know how to write one yet.
+Never fear, there's a <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw">DefWindowProcW</a>
+function that you can use to handle any messages you don't know how to handle.
+Right now, for us, that's all of them.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hInstance = unsafe { GetModuleHandleW(null()) };
+  let sample_window_class_wn = wide_null(&quot;Sample Window Class&quot;);
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(DefWindowProcW);
+  wc.hInstance = hInstance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+  // ...
+}
+
+#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`DefWindowProcW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw)
+  pub fn DefWindowProcW(
+    hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+  ) -&gt; LRESULT;
+}
+</code></pre></pre>
+<p>And, finally, we can get a window to flicker on the screen!</p>
+<h2><a class="header" href="#handling-window-messages" id="handling-window-messages">Handling Window Messages</a></h2>
+<p>We're on to the next page of the tutorial!</p>
+<p>Now we get to learn all about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/window-messages">Window Messages</a></p>
+<p>First we need to define this great <code>MSG</code> struct:</p>
+<pre><code class="language-cpp">typedef struct tagMSG {
+  HWND   hwnd;
+  UINT   message;
+  WPARAM wParam;
+  LPARAM lParam;
+  DWORD  time;
+  POINT  pt;
+  DWORD  lPrivate;
+} MSG, *PMSG, *NPMSG, *LPMSG;
+</code></pre>
+<p>In Rust:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+pub struct MSG {
+  hwnd: HWND,
+  message: UINT,
+  wParam: WPARAM,
+  lParam: LPARAM,
+  time: DWORD,
+  pt: POINT,
+  lPrivate: DWORD,
+}
+unsafe_impl_default_zeroed!(MSG);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Hey look, we have nearly all of that defined already.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type LONG = c_long;
+type c_long = i32;
+#[repr(C)]
+pub struct POINT {
+  x: LONG,
+  y: LONG,
+}
+unsafe_impl_default_zeroed!(POINT);
+<span class="boring">}
+</span></code></pre></pre>
+<p>And now we can get our window messages.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
+  pub fn GetMessageW(
+    lpMsg: LPMSG, hWnd: HWND, wMsgFilterMin: UINT, wMsgFilterMax: UINT,
+  ) -&gt; BOOL;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We have to get them in a loop of course, because we'll be getting a whole lot of them.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut msg = MSG::default();
+loop {
+  let message_return = unsafe { GetMessageW(&amp;mut msg, null_mut(), 0, 0) };
+  if message_return == 0 {
+    break;
+  } else if message_return == -1 {
+    let last_error = unsafe { GetLastError() };
+    panic!(&quot;Error with `GetMessageW`, error code: {}&quot;, last_error);
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Except we're missing <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage">TranslateMessage</a>
+and <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dispatchmessagew">DispatchMessageW</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`TranslateMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
+  pub fn TranslateMessage(lpMsg: *const MSG) -&gt; BOOL;
+
+  /// [`DispatchMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dispatchmessagew)
+  pub fn DispatchMessageW(lpMsg: *const MSG) -&gt; LRESULT;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>There's a lot of good info on the page about window messages,
+but that's all we have to do here in terms of our code.</p>
+<p>By now, our program can open a window.
+However, we also see an eternally spinning mouse once it's open.
+We also <em>don't</em> see our program close when we close the window.
+It just continues to spin in the <code>loop</code>,
+and we have to exit it by pressing Ctrl+C in the command line.</p>
+<h2><a class="header" href="#writing-the-window-procedure" id="writing-the-window-procedure">Writing The Window Procedure</a></h2>
+<p>Next up is <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/writing-the-window-procedure">Writing the Window Procedure</a>.</p>
+<p>That default window procedure we've been using so far is fine for most events.
+Usually it just ignores every event.
+However, a few event types can't just be ignored.
+One of them is that window closing situation.
+Another is that thing with the mouse cursor.</p>
+<p>If we look at MSDN page for the <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-close">WM_CLOSE</a>
+message, we can see that we'll need to be able to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow">DestroyWindow</a>
+and <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage">PostQuitMessage</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+  pub fn DestroyWindow(hWnd: HWND) -&gt; BOOL;
+
+  /// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
+  pub fn PostQuitMessage(nExitCode: c_int);
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we have to write our own procedure.
+This time, no panics.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe extern &quot;system&quot; fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>There's a few different ways we can arrange the branching here,
+and it comes down to taste in the end,
+but most of the messages should return 0 when you've processed them.
+We'll assume that 0 is the &quot;normal&quot; response and build our setup around that.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe extern &quot;system&quot; fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  match Msg {
+    WM_CLOSE =&gt; DestroyWindow(hWnd),
+    WM_DESTROY =&gt; PostQuitMessage(0),
+    _ =&gt; return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>One little problem here is that <code>DestroyWindow</code> and <code>PostQuitMessage</code> have different return types.
+Even though we're ignoring the output of <code>DestroyWindow</code>, it's a type error to have it like this.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe extern &quot;system&quot; fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  match Msg {
+    WM_CLOSE =&gt; {
+      DestroyWindow(hWnd);
+    }
+    WM_DESTROY =&gt; PostQuitMessage(0),
+    _ =&gt; return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ehhhhhh, I'm not sure if I'm a fan of rustfmt making it look like that.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe extern &quot;system&quot; fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  match Msg {
+    WM_CLOSE =&gt; drop(DestroyWindow(hWnd)),
+    WM_DESTROY =&gt; PostQuitMessage(0),
+    _ =&gt; return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Oh, yeah, that's the good stuff.
+We can use <code>drop</code> to throw away the <code>i32</code> value,
+so we don't need the <code>;</code> and braces,
+so rustfmt keeps it on a single line.
+I am <em>all about</em> that compact code stuff.</p>
+<p>Now we can open the window and click for it to close and the program actually terminates.</p>
+<h2><a class="header" href="#fixing-the-cursor-maybe" id="fixing-the-cursor-maybe">Fixing The Cursor (maybe?)</a></h2>
+<p>The mouse cursor is still kinda funky.
+It gets kinda... <em>stuck</em> with different icons.
+If you move the mouse into the window area from different sides,
+the little &quot;adjust window size&quot; cursors don't change to the normal cursor once the mouse is in the middle of the window.
+That's mostly our fault, we left the cursor for our Window Class as null.</p>
+<p>Instead, if we use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw">LoadCursorW</a>
+we can assign a cursor to our window class,
+and then the default window procedure will set the cursor to be the right image at the right time.</p>
+<p>We're supposed to call it with something like:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+<span class="boring">}
+</span></code></pre></pre>
+<p>And the extern function is easy to do:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`LoadCursorW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw)
+  pub fn LoadCursorW(hInstance: HINSTANCE, lpCursorName: LPCWSTR) -&gt; HCURSOR;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>But how do we make that <code>IDC_ARROW</code> thing?
+In the docs for <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw">LoadCursorW</a>
+they're all listed as <code>MAKEINTRESOURCE(number)</code>.
+Okay so we look up <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew">MAKEINTRESOURCEW</a>
+and... it's a C macro. Blast.
+Okay so we can't link to it and call it,
+instead we'll have to grep the windows includes to see what's happening.</p>
+<pre><code>C:\Program Files (x86)\Windows Kits\10\Include&gt;rg &quot;#define MAKEINTRESOURCE&quot;
+10.0.16299.0\um\WinUser.h
+215:#define MAKEINTRESOURCEA(i) ((LPSTR)((ULONG_PTR)((WORD)(i))))
+216:#define MAKEINTRESOURCEW(i) ((LPWSTR)((ULONG_PTR)((WORD)(i))))
+218:#define MAKEINTRESOURCE  MAKEINTRESOURCEW
+220:#define MAKEINTRESOURCE  MAKEINTRESOURCEA
+
+10.0.16299.0\shared\ks.h
+4464:#define MAKEINTRESOURCE( res ) ((ULONG_PTR) (USHORT) res)
+</code></pre>
+<p>Hm, so.. the input value is cast to a <code>WORD</code>,
+then cast directly to a <code>ULONG_PTR</code>,
+then cast directly to a string pointer (either ansi or wide).
+That's not too hard at all.</p>
+<p>We <em>could</em> do this as a Rust macro,
+but I feel like we might want to use a <code>const fn</code> instead.
+I just like having the types be a little more checked when possible.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type LPWSTR = *mut WCHAR;
+type ULONG_PTR = usize;
+/// [`MAKEINTRESOURCEW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
+pub const fn MAKEINTRESOURCEW(i: WORD) -&gt; LPWSTR {
+  i as ULONG_PTR as LPWSTR
+}
+const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Did that fix it?
+Huh. Nope.</p>
+<p>Sometimes you're really sure that you know what's wrong,
+it's just obvious,
+but you didn't know at all and you basically wasted your time.
+This is frustrating, but it's okay.
+Happens to all of us.
+Oh well.</p>
+<p>I've heard that the mouse cursor sometimes is heuristic in Windows,
+and once Windows thinks that your app is behaving properly,
+it'll run the mouse cursor better for you.
+Maybe if we add more to our program it'll start working right.</p>
+<h2><a class="header" href="#painting-the-window" id="painting-the-window">Painting The Window</a></h2>
+<p>The tutorial wants to tell us about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/painting-the-window">Painting The Window</a> next.</p>
+<p>So we have to accept a <code>WM_PAINT</code> message:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const WM_PAINT: u32 = 0x000F;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then do a little dance with a <code>PAINTSTRUCT</code>,
+as well as the additional types it depends on:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+pub struct PAINTSTRUCT {
+  hdc: HDC,
+  fErase: BOOL,
+  rcPaint: RECT,
+  fRestore: BOOL,
+  fIncUpdate: BOOL,
+  rgbReserved: [BYTE; 32],
+}
+unsafe_impl_default_zeroed!(PAINTSTRUCT);
+type HDC = HANDLE;
+type BYTE = u8;
+#[repr(C)]
+pub struct RECT {
+  left: LONG,
+  top: LONG,
+  right: LONG,
+  bottom: LONG,
+}
+unsafe_impl_default_zeroed!(RECT);
+<span class="boring">}
+</span></code></pre></pre>
+<p>This is all becoming routine by now, I hope.</p>
+<p>They want us to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint">BeginPaint</a>,
+then FillRect](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect) on the whole canvas,
+then <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint">EndPaint</a>.
+Sounds easy enough to do.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`BeginPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint)
+  pub fn BeginPaint(hWnd: HWND, lpPaint: LPPAINTSTRUCT) -&gt; HDC;
+
+  /// [`FillRect`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+  pub fn FillRect(hDC: HDC, lprc: *const RECT, hbr: HBRUSH) -&gt; c_int;
+
+  /// [`EndPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+  pub fn EndPaint(hWnd: HWND, lpPaint: *const PAINTSTRUCT) -&gt; BOOL;
+}
+const COLOR_WINDOW: u32 = 5;
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>COLOR_WINDOW</code> constant I had to look up in the headers.</p>
+<p>Now we adjust the window procedure a bit to do the painting:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe extern &quot;system&quot; fn window_procedure(
+  hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM,
+) -&gt; LRESULT {
+  match Msg {
+    WM_CLOSE =&gt; drop(DestroyWindow(hWnd)),
+    WM_DESTROY =&gt; PostQuitMessage(0),
+    WM_PAINT =&gt; {
+      let mut ps = PAINTSTRUCT::default();
+      let hdc = BeginPaint(hWnd, &amp;mut ps);
+      let _success = FillRect(hdc, &amp;ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+      EndPaint(hWnd, &amp;ps);
+    }
+    _ =&gt; return DefWindowProcW(hWnd, Msg, wParam, lParam),
+  }
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Window looks the same as before,
+but if we fiddle with the brush value we can see it'll draw using other colors.
+Doesn't seem to fix the mouse though.</p>
+<h2><a class="header" href="#closing-the-window" id="closing-the-window">Closing The Window</a></h2>
+<p>The tutorial page about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/closing-the-window">Closing The Window</a>
+has a fun part where we can open a message box.
+I like the occasional message box, let's do that.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`MessageBoxW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messageboxw)
+  pub fn MessageBoxW(
+    hWnd: HWND, lpText: LPCWSTR, lpCaption: LPCWSTR, uType: UINT,
+  ) -&gt; c_int;
+}
+const MB_OKCANCEL: u32 = 1;
+const IDOK: c_int = 1;
+<span class="boring">}
+</span></code></pre></pre>
+<p>So here's a fun question, how do we decide when a constant should be <code>u32</code> or <code>c_int</code> or whatever type of int?
+The correct answer is that there's no correct answer.
+I just pick based on how I see the API using it most of the time.
+That is, if it's a <code>const</code> that gets compared to a return from a function,
+we use the function's return type.
+If it's a <code>const</code> we pass to a function, we use the function's argument type.
+Sometimes a value will be used as more than one type of number, then you'll have to just pick one.
+In C the number types can just automatically convert, so they don't really care.
+In Rust, that's not the case, so I just try to pick a default type for the value.
+So that most of the time I can write <code>MY_CONST</code> and not <code>MY_CONST as _</code>.</p>
+<h2><a class="header" href="#managing-application-state" id="managing-application-state">Managing Application State</a></h2>
+<p>Ah, we're back to a slightly tricky part of things.
+In <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/managing-application-state-">Managing Application State</a>
+we get some notions thrown around like &quot;use just global variables until it gets too complicated!&quot;
+Well, no thanks MSDN. I'll go directly to the stage where there's no global variables.</p>
+<p>First, we need to be ready to handle <code>WM_NCCREATE</code> and <code>WM_CREATE</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const WM_NCCREATE: u32 = 0x0081;
+const WM_CREATE: u32 = 0x0001;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we check for them in our window procedure:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  match Msg {
+    WM_NCCREATE =&gt; {
+      println!(&quot;NC Create&quot;);
+      return 1;
+    }
+    WM_CREATE =&gt; println!(&quot;Create&quot;),
+<span class="boring">}
+</span></code></pre></pre>
+<p>Let's see those messages print out...</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.59s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+thread 'main' panicked at 'Failed to create a window.', src\main.rs:53:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+</code></pre>
+<p>Nani!?
+Something already went wrong.
+Better check the full docs for <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-nccreate">WM_NCCREATE</a>.
+Ah, see, it's right there.</p>
+<blockquote>
+<p>Return Value: If an application processes this message, it should return TRUE to continue creation of the window.
+If the application returns FALSE, the CreateWindow or CreateWindowEx function will return a NULL handle.</p>
+</blockquote>
+<p>Okay, so far all of our messages have asked us to just <em>always</em> return 0 when the message was handled,
+and this is the first message we've been handling that we had to decide to return 0 or not.
+Well, right now our window creation should always proceed, so here we go:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>WM_NCCREATE =&gt; {
+  println!(&quot;NC Create&quot;);
+  return 1;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And give this a test now:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.64s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+Create
+</code></pre>
+<p>Naisu!</p>
+<p>Hey, better check on <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-create">WM_CREATE</a>
+to see if it has any return stuff we just got right on accident:</p>
+<blockquote>
+<p><strong>Return value:</strong> If an application processes this message, it should return zero to continue creation of the window.
+If the application returns –1, the window is destroyed and the CreateWindowEx or CreateWindow function returns a NULL handle.</p>
+</blockquote>
+<p>Ah, yeah, we were getting it right sorta on accident.
+Gotta always read those docs.</p>
+<p>Okay now we continue the tutorial:</p>
+<blockquote>
+<p>The last parameter of CreateWindowEx is a pointer of type <code>void*</code>.
+You can pass any pointer value that you want in this parameter.
+When the window procedure handles the <code>WM_NCCREATE</code> or <code>WM_CREATE</code> message,
+it can extract this value from the message data.</p>
+</blockquote>
+<p>Right, so, we have to have a void pointer to pass to the message.
+Uh, just to pick something, let's pass our message a pointer to the number 5.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+let hwnd = unsafe {
+  CreateWindowExW(
+    0,
+    sample_window_class_wn.as_ptr(),
+    sample_window_name_wn.as_ptr(),
+    WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    CW_USEDEFAULT,
+    null_mut(),
+    null_mut(),
+    hInstance,
+    lparam.cast(),
+  )
+};
+<span class="boring">}
+</span></code></pre></pre>
+<p>So we're making a boxed <code>i32</code>,
+then we leak the box because we don't want Rust to drop this box based on scope.
+Instead, we'll clean up the box as part of the window destruction.</p>
+<blockquote>
+<p>When you receive the <code>WM_NCCREATE</code> and <code>WM_CREATE</code> messages,
+the lParam parameter of each message is a pointer to a <code>CREATESTRUCT</code> structure.</p>
+</blockquote>
+<p>The <code>CREATESTRUCT</code> type has <code>A</code> and <code>W</code> forms.
+Since we're using <code>CreateWindowExW</code>, we'll assume that we use <code>CREATESTRUCTW</code> here.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+pub struct CREATESTRUCTW {
+  lpCreateParams: LPVOID,
+  hInstance: HINSTANCE,
+  hMenu: HMENU,
+  hwndParent: HWND,
+  cy: c_int,
+  cx: c_int,
+  y: c_int,
+  x: c_int,
+  style: LONG,
+  lpszName: LPCWSTR,
+  lpszClass: LPCWSTR,
+  dwExStyle: DWORD,
+}
+unsafe_impl_default_zeroed!(CREATESTRUCTW);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now we can get out the boxed pointer thing from the create struct:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>WM_NCCREATE =&gt; {
+  println!(&quot;NC Create&quot;);
+  let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
+  if createstruct.is_null() {
+    return 0;
+  }
+  let boxed_i32_ptr: *mut i32 = (*createstruct).lpCreateParams.cast();
+  return 1;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then we use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw">SetWindowLongPtrW</a>
+to connect this create struct pointer to the window itself.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+  pub fn SetWindowLongPtrW(
+    hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR,
+  ) -&gt; LONG_PTR;
+}
+const GWLP_USERDATA: c_int = -21;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And it's fairly simple to call, but we have to put a manual cast to <code>LONG_PTR</code> in:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>WM_NCCREATE =&gt; {
+  println!(&quot;NC Create&quot;);
+  let createstruct: *mut CREATESTRUCTW = lParam as *mut _;
+  if createstruct.is_null() {
+    return 0;
+  }
+  let boxed_i32_ptr = (*createstruct).lpCreateParams;
+  SetWindowLongPtrW(hWnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
+  return 1;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then we can use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw">GetWindowLongPtrW</a>
+to get our windows's custom user data:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
+  pub fn GetWindowLongPtrW(hWnd: HWND, nIndex: c_int) -&gt; LONG_PTR;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, uh, we'll print out the current value or something.
+I guess, each time we go to <code>WM_PAINT</code> we'll print the value and add 1 to it.
+Just any old thing to see that it's working.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>WM_PAINT =&gt; {
+  let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+  println!(&quot;Current ptr: {}&quot;, *ptr);
+  *ptr += 1;
+  let mut ps = PAINTSTRUCT::default();
+  let hdc = BeginPaint(hWnd, &amp;mut ps);
+  let _success = FillRect(hdc, &amp;ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+  EndPaint(hWnd, &amp;ps);
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>That'll print 5, and then if you force a bunch of paint messages you can see it count up.
+The easiest way to do that is to adjust the window's size so that it's small,
+then drag it to be bigger.
+Each time the window's size expands it triggers new paint messages.</p>
+<p>Of course, we also can't forget that cleanup code we promised.
+The way we do the cleanup is to just turn the raw pointer back into a <code>Box&lt;i32&gt;</code>.
+The drop code for the Box type will handle the rest for us.
+Of course, we should only do this right as the window is being destroyed.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>WM_DESTROY =&gt; {
+  let ptr = GetWindowLongPtrW(hWnd, GWLP_USERDATA) as *mut i32;
+  Box::from_raw(ptr);
+  println!(&quot;Cleaned up the box.&quot;);
+  PostQuitMessage(0);
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And finally, I think we're done!</p>
+<h2><a class="header" href="#hey-what-about-the-triangle" id="hey-what-about-the-triangle">Hey, What About The Triangle?</a></h2>
+<p>Well, there's several ways to draw a triangle in windows.
+You can use DirectX, OpenGL, Vulkan, probably some other ways I don't even know about.
+This lesson is going to stop at <em>just</em> the window creation part.
+Then, each other lesson on a particular Windows drawing API can assume you've read this as a baseline level of understanding.</p>
+<h2><a class="header" href="#fixing-that-stupid-cursor" id="fixing-that-stupid-cursor">Fixing That Stupid Cursor</a></h2>
+<p>Before I finished this, I really wanted to figure out what was going on with that cursor.</p>
+<p>So what I did was, first we want to handle the <code>WM_SETCURSOR</code> event,
+and then in the event we call the <code>SetCursor</code> function.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// ...
+    WM_SETCURSOR =&gt; {
+      let hInstance = GetModuleHandleW(null());
+      let cursor = LoadCursorW(hInstance, IDC_ARROW);
+      let _old_cursor = SetCursor(cursor);
+      //
+      return 1;
+    }
+// ...
+
+#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`SetCursor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor)
+  pub fn SetCursor(hCursor: HCURSOR) -&gt; HCURSOR;
+}
+const WM_SETCURSOR: u32 = 0x0020;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Alright, so, what happens if you do that?
+Well, the cursor disappears entirely.
+What? Why?
+Well, let's check the docs for <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor">SetCursor</a>.
+Hm, hmm, hmmmm, yeah.</p>
+<blockquote>
+<p>If this parameter is NULL, the cursor is removed from the screen.</p>
+</blockquote>
+<p>Okay, so we must be getting null for <code>cursor</code>.
+So <code>LoadCursorW(hInstance, IDC_ARROW)</code> is returning null...
+and that's how we're setting <code>wc.hCursor</code> during startup!
+So we must have been setting null <em>this whole time</em>.
+What fools we've been.</p>
+<p>Okay let's check out the MSDN guide on <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/setting-the-cursor-image">Setting the Cursor Image</a>.
+They've got some sample code:</p>
+<pre><code class="language-cpp">hCursor = LoadCursor(NULL, cursor);
+SetCursor(hCursor);
+</code></pre>
+<p>Oh. Huh. So, you're supposed to pass null to the load call?
+I guess that makes sense.
+I mean we had an HINSTANCE sitting around and we just used it,
+but whe you think about it,
+our own executable file probably <em>doesn't</em> contain the <code>IDC_ARROW</code> cursor.</p>
+<p>So if we delete the cursor handling code from the window procedure,
+and just adjust the startup code to be correct:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut wc = WNDCLASSW::default();
+wc.lpfnWndProc = Some(window_procedure);
+wc.hInstance = hInstance;
+wc.lpszClassName = sample_window_class_wn.as_ptr();
+wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
+<span class="boring">}
+</span></code></pre></pre>
+<p>Well now our cursor works just fine!</p>
+<p>The day is saved!</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
