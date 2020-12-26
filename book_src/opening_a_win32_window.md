@@ -1572,3 +1572,72 @@ Well, there's several ways to draw a triangle in windows.
 You can use DirectX, OpenGL, Vulkan, probably some other ways I don't even know about.
 This lesson is going to stop at *just* the window creation part.
 Then, each other lesson on a particular Windows drawing API can assume you've read this as a baseline level of understanding.
+
+## Fixing That Stupid Cursor
+
+Before I finished this, I really wanted to figure out what was going on with that cursor.
+
+So what I did was, first we want to handle the `WM_SETCURSOR` event,
+and then in the event we call the `SetCursor` function.
+
+```rust
+// ...
+    WM_SETCURSOR => {
+      let hInstance = GetModuleHandleW(null());
+      let cursor = LoadCursorW(hInstance, IDC_ARROW);
+      let _old_cursor = SetCursor(cursor);
+      //
+      return 1;
+    }
+// ...
+
+#[link(name = "User32")]
+extern "system" {
+  /// [`SetCursor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor)
+  pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
+}
+const WM_SETCURSOR: u32 = 0x0020;
+```
+
+Alright, so, what happens if you do that?
+Well, the cursor disappears entirely.
+What? Why?
+Well, let's check the docs for [SetCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor).
+Hm, hmm, hmmmm, yeah.
+
+> If this parameter is NULL, the cursor is removed from the screen.
+
+Okay, so we must be getting null for `cursor`.
+So `LoadCursorW(hInstance, IDC_ARROW)` is returning null...
+and that's how we're setting `wc.hCursor` during startup!
+So we must have been setting null *this whole time*.
+What fools we've been.
+
+Okay let's check out the MSDN guide on [Setting the Cursor Image](https://docs.microsoft.com/en-us/windows/win32/learnwin32/setting-the-cursor-image).
+They've got some sample code:
+
+```cpp
+hCursor = LoadCursor(NULL, cursor);
+SetCursor(hCursor);
+```
+
+Oh. Huh. So, you're supposed to pass null to the load call?
+I guess that makes sense.
+I mean we had an HINSTANCE sitting around and we just used it,
+but whe you think about it,
+our own executable file probably *doesn't* contain the `IDC_ARROW` cursor.
+
+So if we delete the cursor handling code from the window procedure,
+and just adjust the startup code to be correct:
+
+```rust
+let mut wc = WNDCLASSW::default();
+wc.lpfnWndProc = Some(window_procedure);
+wc.hInstance = hInstance;
+wc.lpszClassName = sample_window_class_wn.as_ptr();
+wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
+```
+
+Well now our cursor works just fine!
+
+The day is saved!

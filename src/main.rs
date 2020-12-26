@@ -24,7 +24,7 @@ fn main() {
   wc.lpfnWndProc = Some(window_procedure);
   wc.hInstance = hInstance;
   wc.lpszClassName = sample_window_class_wn.as_ptr();
-  wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+  wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
 
   let atom = unsafe { RegisterClassW(&wc) };
   if atom == 0 {
@@ -255,6 +255,7 @@ const WM_DESTROY: u32 = 0x0002;
 const WM_PAINT: u32 = 0x000F;
 const WM_NCCREATE: u32 = 0x0081;
 const WM_CREATE: u32 = 0x0001;
+const WM_SETCURSOR: u32 = 0x0020;
 const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 const COLOR_WINDOW: u32 = 5;
 const MB_OKCANCEL: u32 = 1;
@@ -331,6 +332,9 @@ extern "system" {
 
   /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
   pub fn GetWindowLongPtrW(hWnd: HWND, nIndex: c_int) -> LONG_PTR;
+
+  /// [`SetCursor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor)
+  pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
 }
 
 /// [`MAKEINTRESOURCEW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
