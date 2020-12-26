@@ -243,10 +243,10 @@ From now on, if you refer to a <code>WNDCLASSW</code>, then it's the same as if 
 This is really good, because writing out all the fields any time we just want to talk about the type is just a pain.</li>
 <li><code>*PWNDCLASSW, *NPWNDCLASSW, *LPWNDCLASSW;</code> these are more aliases as well.
 The <code>*</code> makes these pointer types, so a <code>PWNDCLASSW</code> is the same as <code>struct tagWNDCLASSW { ... } *</code> or <code>WNDCLASSW*</code>.
-The prefixes on each name variant stand for &quot;Pointer&quot;, &quot;Narrow Pointer&quot;, and &quot;Long Pointer&quot;.
-This is mostly legacy stuff from when computers didn't have much memory and people tried to save memory by having smaller pointer types and bigger pointer types.
-These days we have enough computer memory to keep things simply and only have one type of pointer.
-The names are still around for legacy compatability.</li>
+The prefixes on each name variant stand for &quot;Pointer&quot;, &quot;Near Pointer&quot;, and &quot;Long Pointer&quot;.
+Long ago when computers had segmented memory there were differences in the pointer types.
+These days computers aren't set up for that, so they're all just a normal pointer.
+The different names are still around for legacy compatability.</li>
 </ul>
 <h3><a class="header" href="#starting-our-rust-code" id="starting-our-rust-code">Starting Our Rust Code</a></h3>
 <p>I think we've got enough on our plate to start writing things down in Rust.</p>
