@@ -99,7 +99,7 @@ Let's take it one part at a time.
   The prefixes on each name variant stand for "Pointer", "Narrow Pointer", and "Long Pointer".
   This is mostly legacy stuff from when computers didn't have much memory and people tried to save memory by having smaller pointer types and bigger pointer types.
   These days we have enough computer memory to keep things simply and only have one type of pointer.
-  Still, the names are still around for legacy compatability.
+  The names are still around for legacy compatability.
 
 ### Starting Our Rust Code
 
@@ -259,8 +259,8 @@ Alright, get that junk out of the way and what do we see?
 LRESULT WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 ```
 Oh, hey, *we can almost read that*.
-It helps to know are that C puts the output type on the left,
-and also the function argument types are on the left.
+It helps to remember that C puts the function output type to the left of the function's name,
+and also the function argument types are to the left of each argument name.
 When we think back to how strut fields were declared,
 this is all fairly consistent.
 
