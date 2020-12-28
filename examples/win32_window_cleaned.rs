@@ -1,0 +1,92 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use triangle_from_scratch::win32::*;
+
+fn main() {
+  let sample_window_class = "Sample Window Class";
+  let sample_window_class_wn = wide_null(sample_window_class);
+
+  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(window_procedure);
+  wc.hInstance = get_process_handle();
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+  wc.hCursor = load_predefined_cursor(IDCursor::Arrow).unwrap();
+
+  let _atom = unsafe { register_class(&wc) }.unwrap();
+
+  let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+  let hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      "Sample Window Name",
+      None,
+      [800, 600],
+      lparam.cast(),
+    )
+  }
+  .unwrap();
+  let _previously_visible = unsafe { ShowWindow(hwnd, SW_SHOW) };
+
+  loop {
+    match get_any_message() {
+      Ok(msg) => {
+        if msg.message == WM_QUIT {
+          break;
+        }
+        translate_message(&msg);
+        unsafe {
+          DispatchMessageW(&msg);
+        }
+      }
+      Err(e) => panic!("Error when getting from the message queue: {}", e),
+    }
+  }
+}
+
+pub unsafe extern "system" fn window_procedure(
+  hwnd: HWND, msg: UINT, wparam: WPARAM, lparam: LPARAM,
+) -> LRESULT {
+  match msg {
+    WM_NCCREATE => {
+      println!("NC Create");
+      let createstruct: *mut CREATESTRUCTW = lparam as *mut _;
+      if createstruct.is_null() {
+        return 0;
+      }
+      let boxed_i32_ptr = (*createstruct).lpCreateParams;
+      SetWindowLongPtrW(hwnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
+      return 1;
+    }
+    WM_CREATE => println!("Create"),
+    WM_CLOSE => {
+      let text_null = wide_null("Really quit?");
+      let caption_null = wide_null("My Caption");
+      let mb_output = MessageBoxW(
+        hwnd,
+        text_null.as_ptr(),
+        caption_null.as_ptr(),
+        MB_OKCANCEL,
+      );
+      if mb_output == IDOK {
+        let _success = DestroyWindow(hwnd);
+      }
+    }
+    WM_DESTROY => {
+      let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut i32;
+      Box::from_raw(ptr);
+      println!("Cleaned up the box.");
+      PostQuitMessage(0);
+    }
+    WM_PAINT => {
+      let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut i32;
+      println!("Current ptr: {}", *ptr);
+      *ptr += 1;
+      let mut ps = PAINTSTRUCT::default();
+      let hdc = BeginPaint(hwnd, &mut ps);
+      let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+      EndPaint(hwnd, &ps);
+    }
+    _ => return DefWindowProcW(hwnd, msg, wparam, lparam),
+  }
+  0
+}
