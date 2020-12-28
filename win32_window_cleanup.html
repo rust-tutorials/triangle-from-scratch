@@ -1,0 +1,1067 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Win32 Window Cleanup - Triangle From Scratch</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="opening_a_win32_window.html"><strong aria-hidden="true">1.</strong> Opening a Win32 Window</a></li><li class="chapter-item expanded "><a href="win32_window_cleanup.html" class="active"><strong aria-hidden="true">2.</strong> Win32 Window Cleanup</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Triangle From Scratch</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#win32-window-cleanup" id="win32-window-cleanup">Win32 Window Cleanup</a></h1>
+<p>During the last article I said that we'd just write all our code into <code>main.rs</code>,
+and then we could sort it into a library later.
+Well, later is now.</p>
+<h2><a class="header" href="#new-files" id="new-files">New Files</a></h2>
+<p>This isn't very hard.
+Cargo follows a &quot;convention over configuration&quot; style,
+so as long as we do what it expects we won't even have to change <code>Cargo.toml</code> or anything.</p>
+<p>First we copy <code>src/main.rs</code> into <code>examples/win32_window_standalone.rs</code>,
+so that we can keep our nice small version that's all in one file.
+Over time our library will build up,
+and later lessons will refer to things we've put in our library already.
+However, this first example can be understood in a single file,
+without a person having to know what we've put into our library.
+I think that's pretty valuable, so we will preserve this first draft for later viewing.</p>
+<p>Then we make <code>src/lib.rs</code>.
+This holds the top level items of the library.
+Within the crate's module hierarchy, <code>lib.rs</code> is a module is <em>above</em> the other modules of the crate.
+Within the filesystem on disk, <code>lib.rs</code> is a file <em>beside</em> the other files that make up the crate.
+With <em>all other</em> modules, the default filesystem location for a module matches the module's logical crate location.
+With <code>lib.rs</code> it's just slightly magical, so it has a different default filesystem location.
+Sometimes people find this one exception confusing,
+so I'm trying to be extra clear about what's going on regarding this point.</p>
+<p>Next, since this is all Win32 specific stuff we'll be putting in the library right now,
+which obviously doesn't work on all targets,
+we'll make a <code>src/win32.rs</code> file,
+and then declare it as a conditional module within the library.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in lib.rs
+
+#[cfg(windows)]
+pub mod win32;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, if we're on windows, we'll be able to use our nice <code>win32</code> module.</p>
+<h2><a class="header" href="#put-the-declarations-in-the-library" id="put-the-declarations-in-the-library">Put The Declarations In The Library</a></h2>
+<p>Okay first we put every single type, struct, const, and extern declaration into <code>win32.rs</code>.
+We also have to make sure that all the fields and types are marked as <code>pub</code>.</p>
+<p>Then we put a <code>use triangle_from_scratch::win32::*;</code> in our program.</p>
+<p>The <code>main.rs</code> should only be left with <code>main</code> and <code>window_procedure</code>,
+but the program should build and run exactly as before.</p>
+<p>Also, I'm going to remove the <code>allow</code> attributes at the top of the <code>main.rs</code>,
+and then convert the file to standard Rust naming for all the variables.
+This doesn't make the program do better things, but it helps people read it.</p>
+<h2><a class="header" href="#we-got-too-much-unsafe" id="we-got-too-much-unsafe">We Got Too Much Unsafe</a></h2>
+<p>All this <code>unsafe</code> code isn't great.
+Having <code>unsafe</code> code around means that if we aren't careful we don't get &quot;just&quot; a wrong output or an unexpected panic,
+instead we get some sort of <em>Undefined Behavior</em> (UB).
+UB <em>might</em> do what you expected, or it <em>might</em> segfault, or it <em>might</em> be a security vulnerability.
+I'd rather not have a security vulnerability in my program,
+so I'd like to reduce the amount of <code>unsafe</code> code in the program as much as I can.</p>
+<p><code>/rant start</code></p>
+<p>Let's be very plain: You cannot fully eliminate <code>unsafe</code>.</p>
+<p>Fundamentally, interacting with the outside world is <code>unsafe</code>.
+If your program doesn't have any <code>unsafe</code> <em>anywhere</em> in the call stack,
+then it's not actually interacting with the world at all,
+and that's a pretty useless program to be running.</p>
+<p>Operating systems and device drivers aren't designed to be free of UB.
+They are designed for you to pay attention, and ask for the right thing at the right time.
+We have to run <code>unsafe</code> code to get <em>anything</em> useful done.</p>
+<p>However, <code>unsafe</code> code is <strong>not</strong> automatically the end of everything.
+It's code that <em>can</em> go wrong, but that doesn't means it <em>must</em> go wrong.</p>
+<p>Fire can burn down your house, but you also need it to forge metal.</p>
+<p><code>/rant end</code></p>
+<p>Our job, every time we use an <code>unsafe</code> block, is to make sure,
+either with compile time checks or runtime checks,
+that we don't call any <code>unsafe</code> functions improperly.</p>
+<p>It's &quot;that simple&quot;.
+You know, &quot;just&quot; get good.</p>
+<p>Every time we have an <code>unsafe</code> block, that block needs to be audited for correctness.
+The less <code>unsafe</code> blocks we have, the less we need to audit.</p>
+<p>Our strategy is that we want to put our <code>unsafe</code> blocks inside of safe functions,
+and then the safe function performs whatever checks it needs to before actually making the <code>unsafe</code> function call.
+That might mean a runtime check,
+or the type system might even allow for static correctness to be known without a runtime check.
+Either way, we get it right <em>once</em> in the safe wrapper function,
+and then all other code only calls the safe function from there on.
+Then we only have to audit the <code>unsafe</code> block in one location,
+not everywhere all over the codebase.</p>
+<p>I know, &quot;put it in a function&quot; is a very basic concept.
+You could have thought of that too, I'm sure.
+Still, sometimes it helps just to put the plan into words, even if it seems obvious.</p>
+<h2><a class="header" href="#safe-wrapping-getmodulehandlew" id="safe-wrapping-getmodulehandlew">Safe Wrapping <code>GetModuleHandleW</code></a></h2>
+<p>Alright so what can we <em>actually</em> make into safe functions?</p>
+<p>Well the first thing the program does is call <code>GetModuleHandleW(null())</code>.
+Is that legal?
+I mean we can at least say that it seems intentional, that doesn't mean it's correct.
+Let's checks the docs for <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew">GetModuleHandleW</a>.</p>
+<blockquote>
+<p>lpModuleName: ... If this parameter is NULL, GetModuleHandle returns a handle to the file used to create the calling process (.exe file).</p>
+</blockquote>
+<p>Okay, not only are we allowed to pass null, but if we do then we get a special sort of default-ish return value.</p>
+<p>In terms of an interface for a wrapper function for this,
+I think it'd be a little awkward to try and accept both null and non-null arguments and have it be ergonomic and stuff.
+Thankfully, <em>we don't actually have to do that</em>.
+We're just using the null argument style,
+and if we use the non-null argument variant later we can just make it a totally separate function later.
+So let's write a function for calling <code>GetModuleHandleW(null())</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Returns a handle to the file used to create the calling process (.exe file)
+///
+/// See [`GetModuleHandleW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew)
+pub fn get_process_handle() -&gt; HMODULE {
+  // Safety: as per the MSDN docs.
+  unsafe { GetModuleHandleW(null()) }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And now we can call that at the start of our <code>fn main()</code> in <code>main.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let hinstance = get_process_handle();
+  // ...
+</code></pre></pre>
+<p>No <code>unsafe</code> block! One less thing to audit!</p>
+<h2><a class="header" href="#safe-wrapping-loadcursorw" id="safe-wrapping-loadcursorw">Safe Wrapping <code>LoadCursorW</code></a></h2>
+<p>So we go down a bit, the next <code>unsafe</code> function is <code>LoadCursorW</code>.
+That one gave us some trouble for quite a while.
+I was passing the wrong argument in the first position,
+and then getting a null back without realizing it.
+It wasn't actually UB, it was an allowed function call to make,
+but I should have been checking the function's output and handling the error.
+Forgetting to handle the error case is what was causing my downfall.</p>
+<p>Let's have a look at <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw">LoadCursorW</a>.</p>
+<p>We see that the <code>HINSTANCE</code> we pass has to be an executable file with a cursor in it.
+That's a thing, did you know that?
+You can put cursors and icons <em>inside</em> of executables and then programs can pick them out and use them.
+I knew you could do that with icons for desktop shortcuts,
+but I guess it works with cursors too.
+Neat.</p>
+<p>Right now the program says <code>LoadCursorW(null_mut(), IDC_ARROW)</code>, so can we pass null?
+It doesn't say anything about null in the description for <code>hInstance</code>,
+but lower down in the description for <code>lpCursorName</code> it says if you pass an <code>IDC_</code> value from the list as the <code>lpCursorName</code>,
+then in that case you should set <code>hInstance</code> to null.</p>
+<p>Like with how we wrapped <code>GetModuleHandleW</code>,
+we don't need to make a <em>single</em> wrapper function that handles every possible case that <code>LoadCursorW</code> does.
+Here, lets just make a function for loading the <code>IDC_</code> cursors.
+If we want to load cursors out of non-null instances later on that can be a separate function.</p>
+<p>And let's not forget to check that Return Value error case information:</p>
+<blockquote>
+<p>If the function succeeds, the return value is the handle to the newly loaded cursor.
+If the function fails, the return value is NULL. To get extended error information, call <code>GetLastError</code>.</p>
+</blockquote>
+<p>Simple enough. What do the Remarks have to say? Ah, this part sounds important:</p>
+<blockquote>
+<p>This function returns a valid cursor handle only if the lpCursorName parameter is a pointer to a cursor resource.
+If lpCursorName is a pointer to any type of resource other than a cursor (such as an icon),
+the return value is not NULL, even though it is not a valid cursor handle.</p>
+</blockquote>
+<p>Yikes, so we want to be very sure that we're passing a value from that list of allowed values.</p>
+<p>Okay, so what if we make an enum of what you're allowed to pass in.
+On the Rust side, you can only have an enum of a real variant.
+Constructing an improper enum is already UB, so we don't even have to think about that case.
+If we define our enum properly then we know people will only be allowed to pass correct values.</p>
+<p>And since things can error, let's use a <code>Result</code> type for the output.
+For now, the error will just be the <code>()</code> type.
+We'll come back here once we've looked at <code>GetLastError</code>,
+and made ourselves a useful error code type.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// The predefined cursor styles.
+pub enum IDCursor {
+  /// Standard arrow and small hourglass
+  AppStarting = 32650,
+  /// Standard arrow
+  Arrow = 32512,
+  /// Crosshair
+  Cross = 32515,
+  /// Hand
+  Hand = 32649,
+  /// Arrow and question mark
+  Help = 32651,
+  /// I-beam
+  IBeam = 32513,
+  /// Slashed circle
+  No = 32648,
+  /// Four-pointed arrow pointing north, south, east, and west
+  SizeAll = 32646,
+  /// Double-pointed arrow pointing northeast and southwest
+  SizeNeSw = 32643,
+  /// Double-pointed arrow pointing north and south
+  SizeNS = 32645,
+  /// Double-pointed arrow pointing northwest and southeast
+  SizeNwSe = 32642,
+  /// Double-pointed arrow pointing west and east
+  SizeWE = 32644,
+  /// Vertical arrow
+  UpArrow = 32516,
+  /// Hourglass
+  Wait = 32514,
+}
+
+/// Load one of the predefined cursors.
+///
+/// See [`LoadCursorW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadcursorw)
+pub fn load_predefined_cursor(cursor: IDCursor) -&gt; Result&lt;HCURSOR, ()&gt; {
+  // Safety: The enum only allows values from the approved list. See MSDN.
+  let hcursor =
+    unsafe { LoadCursorW(null_mut(), MAKEINTRESOURCEW(cursor as WORD)) };
+  if hcursor.is_null() {
+    Err(())
+  } else {
+    Ok(hcursor)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>That's a lot of variants, but the wrapper function is still very simple.
+The tag values of the enum are each set to the <code>MAKEINTRESOURCEW</code> input shown in the documentation.
+When an enum is passed in, <code>cursor as WORD</code> will give us the tag value.
+We pass that value to <code>MAKEINTRESOURCEW</code>, then it goes off to <code>LoadCursorW</code>.</p>
+<p>Also, remember that <code>MAKEINTRESOURCEW</code> is just some type casting stuff,
+it's not actually making any resources we have to free up later.</p>
+<p>Let's check our <code>fn main</code> with this update:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let mut wc = WNDCLASSW::default();
+  wc.lpfnWndProc = Some(window_procedure);
+  wc.hInstance = hinstance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+  wc.hCursor = load_predefined_cursor(IDCursor::Arrow).unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ah ha! Now it's clear that we're going for a predefined cursor,
+<em>and</em> it's clear that the call could fail.
+Of course, using <code>unwrap</code> isn't a very robust way to solve problems.
+It's <em>absolutely</em> not allowed in a good library (always pass the error back up!),
+but in a binary it's &quot;sorta okay, I guess&quot;, particularly since this is a demo.</p>
+<h2><a class="header" href="#partial-wrapping-registerclassw" id="partial-wrapping-registerclassw">Partial Wrapping <code>RegisterClassW</code></a></h2>
+<p><em>Partial</em> wrapping?
+I can hear you asking.</p>
+<p>Yeah, you can't always make it safe.
+But you can at least <em>almost</em> always make it better typed.</p>
+<p>If we have a look at the docs of our next <code>unsafe</code> function call,
+<a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw">RegisterClassW</a>,
+It says &quot;You must fill the structure with the appropriate class attributes before passing it to the function.&quot;</p>
+<p>But the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">WNDCLASSW</a>
+type is full of pointers to strings and stuff.
+There's like three things that <em>aren't</em> pointers,
+and then all the rest is a pile of pointers.
+We don't have any easy way to track the validity of all the fields.
+I'm sure it's possible to do something here to make sure that all fields are valid all the time,
+but I'm also sure that the amount of effort that it would take would exceed the effort to just use an <code>unsafe</code> block and audit that code every so often.</p>
+<p>So we're going to make a wrapper function,
+but we'll leave it as an <code>unsafe</code> function.
+Even then, we can give a better input and output type.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Registers a window class struct.
+///
+/// ## Safety
+///
+/// All pointer fields of the struct must be valid.
+///
+/// See [`RegisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw)
+pub unsafe fn register_class(window_class: &amp;WNDCLASSW) -&gt; Result&lt;ATOM, ()&gt; {
+  let atom = RegisterClassW(window_class);
+  if atom == 0 {
+    Err(())
+  } else {
+    Ok(atom)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Okay, and then the usage code:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let atom = unsafe { register_class(&amp;wc) }.unwrap_or_else(|()| {
+    let last_error = unsafe { GetLastError() };
+    panic!(&quot;Could not register the window class, error code: {}&quot;, last_error);
+  });
+<span class="boring">}
+</span></code></pre></pre>
+<p>Hmm.
+At first glance, things didn't improve as much as we might have wanted.
+Ah, but here's an interesting thing.
+Now <code>atom</code> is marked as a <em>totally unused</em> variable.
+We can't even forget to check for an error any more,
+someone else already did that for us.</p>
+<p>Still, the error case is very wonky.
+That needs a fix.</p>
+<h2><a class="header" href="#safe-wrapping-getlasterror" id="safe-wrapping-getlasterror">Safe Wrapping <code>GetLastError</code></a></h2>
+<p>I'm pretty sure I remember how <a href="https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>
+worked.
+It was super simple, right?
+Yeah, it just gives you the thread-local last-error value.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gets the thread-local last-error code value.
+///
+/// See [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror)
+pub fn get_last_error() -&gt; DWORD {
+  unsafe { GetLastError() }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Done.
+Right?</p>
+<p>Naw, of course not.
+Keep reading.</p>
+<blockquote>
+<p>To obtain an error string for system error codes, use the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessage">FormatMessage</a> function.
+For a complete list of error codes provided by the operating system, see <a href="https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes">System Error Codes</a>.</p>
+</blockquote>
+<p>So we want to be able to print out the error string.
+Really, the least we can do for our users.
+Let's just have a quick look at <code>FormatMessage</code> and... oh... oh my...
+You see that function signature?
+There's flags, there's pointers, there's even a <code>va_list</code> thing we don't know about.
+Oof.</p>
+<h2><a class="header" href="#a-newtype-for-the-error-code" id="a-newtype-for-the-error-code">A Newtype For The Error Code</a></h2>
+<p>Okay, okay.
+When there's a lot to do, one step at a time is usually the best way to do it.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(transparent)]
+pub struct Win32Error(pub DWORD);
+<span class="boring">}
+</span></code></pre></pre>
+<p>But, unlike the other types so far, this type is really intended to be shown to people.
+For this, there's two main traits that Rust supports:</p>
+<ul>
+<li><code>Debug</code> is for when you want to show the value <em>to a Rust programmer</em>.</li>
+<li><code>Display</code> is for when you want to show the value <em>to the general public</em>.</li>
+</ul>
+<p>So for our Debug impl, it can just show &quot;Win32Error(12)&quot; or similar.
+This is exactly what a derived <code>Debug</code> impl will do, so we'll use the derive:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug)]
+#[repr(transparent)]
+pub struct Win32Error(pub DWORD);
+<span class="boring">}
+</span></code></pre></pre>
+<p>For Display we can't derive an implementation.
+I don't mean that we <em>shouldn't</em> derive an implementation,
+but that we literally cannot.
+The standard library literally doesn't offer a derive for the <code>Display</code> trait.
+That's because the standard library is managed by people who are very silly.
+They have a silly concern that a derived Display impl &quot;might&quot; not show the right sort of info.
+Instead of saying &quot;if the derive doesn't do the right thing for you, write the impl by hand&quot;,
+they just completely refuse to offer a derive at all.
+Like I said, completely silly.</p>
+<p>But we won't dwell on that too much,
+because even if the derive was there, we wouldn't be able to use it in this case.</p>
+<p>Instead... we get to use everyone's favorite function.... <a href="https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessagew">FormatMessageW</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl core::fmt::Display for Win32Error {
+  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    todo!(&quot;call FormatMessageW&quot;)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>First we define the extern we need:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub type LPCVOID = *const core::ffi::c_void;
+pub type va_list = *mut c_char;
+pub type c_char = i8;
+#[link(name = &quot;Kernel32&quot;)]
+extern &quot;system&quot; {
+  /// [`FormatMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessagew)
+  pub fn FormatMessageW(
+    dwFlags: DWORD, lpSource: LPCVOID, dwMessageId: DWORD, dwLanguageId: DWORD,
+    lpBuffer: LPWSTR, nSize: DWORD, Arguments: va_list,
+  ) -&gt; DWORD;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now let's go through each argument one by one.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl core::fmt::Display for Win32Error {
+  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    let dwFlags = todo!();
+    let lpSource = todo!();
+    let dwMessageId = todo!();
+    let dwLanguageId = todo!();
+    let lpBuffer = todo!();
+    let nSize = todo!();
+    let Arguments = todo!();
+    let dword = unsafe {
+      FormatMessageW(
+        dwFlags,
+        lpSource,
+        dwMessageId,
+        dwLanguageId,
+        lpBuffer,
+        nSize,
+        Arguments,
+      )
+    };
+    todo!(&quot;call FormatMessageW&quot;)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li><code>dwFlags</code> lets us control a lot of options.
+Looking carefully, it seems like we want <code>FORMAT_MESSAGE_ALLOCATE_BUFFER</code>,
+which makes <code>FormatMessageW</code> perform the allocation of a large enough buffer.
+But then... if we use this <code>lpBuffer</code> gets a little odd.
+More on that in a moment.
+We also want <code>FORMAT_MESSAGE_FROM_SYSTEM</code>, since these are system errors.
+All done? Not quite.
+If we skip ahead down the page to &quot;Security Remarks&quot; then we see that we need <code>FORMAT_MESSAGE_IGNORE_INSERTS</code> too.
+<em>Now</em> are we done?
+Hmm, if we set the low-order byte we can fiddle the line length, but we don't need that.
+We'll leave it as 0.</li>
+<li><code>lpSource</code> is the location of the message definition.
+It's only used if our message is from an hmodule or a string.
+Since our message is from the system the argument is ignored,
+so we'll leave this as null.</li>
+<li><code>dwMessageId</code> is the identifier of the requested message.
+That means the error code, so we'll set <code>self.0</code> here.</li>
+<li><code>dwLanguageId</code> is the language identifier of the message.
+Happily, if we just pass 0, then it'll basically look up the best message it can,
+and then format that. So we'll just pass 0.</li>
+<li><code>lpBuffer</code> is... hey we had to remember something about this!
+Okay so because we're using <code>FORMAT_MESSAGE_ALLOCATE_BUFFER</code>...
+well <em>normally</em> this would be interpreted as <code>LPWSTR</code> (pointer to a null-terminated wide string).
+However, since we're using <code>FORMAT_MESSAGE_ALLOCATE_BUFFER</code>,
+instead the function will use our pointer as a pointer to the start of a buffer.
+The <code>lpBuffer</code> is written with the buffer start info,
+and then we read it back after the function completes,
+and we get our allocation that way.
+So, in our use case, the <code>lpBuffer</code> arg is a pointer <em>to a pointer</em>.
+We have to be careful about this point.</li>
+<li><code>nSize</code> is the size of the output buffer, if you're providing the output buffer,
+or it's the minimum output buffer size you want if you're using <code>FORMAT_MESSAGE_ALLOCATE_BUFFER</code>.
+We don't have any minimum needs, so we'll give 0.</li>
+<li><code>Arguments</code> is the insert arguments for the formatting.
+However, we're using <code>FORMAT_MESSAGE_IGNORE_INSERTS</code>, so we'll pass null.</li>
+</ul>
+<p><strong>Returns:</strong> what we get back is the number of <code>TCHAR</code> values stored in the buffer,
+<em>excluding</em> the final null character.
+A <code>TCHAR</code> is either an <code>i8</code> (for <code>A</code> functions) or a <code>u16</code> (for <code>W</code> functions).</p>
+<p>Okay, so, let's review what we've got so far, because this is a lot of little things:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl core::fmt::Display for Win32Error {
+  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    let dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER
+      | FORMAT_MESSAGE_FROM_SYSTEM
+      | FORMAT_MESSAGE_IGNORE_INSERTS;
+    let lpSource = null_mut();
+    let dwMessageId = self.0;
+    let dwLanguageId = 0;
+    let mut buffer: *mut u16 = null_mut();
+    let lpBuffer = &amp;mut buffer as *mut *mut u16 as *mut u16;
+    let nSize = 0;
+    let Arguments = null_mut();
+    let tchar_count_excluding_null = unsafe {
+      FormatMessageW(
+        dwFlags,
+        lpSource,
+        dwMessageId,
+        dwLanguageId,
+        lpBuffer,
+        nSize,
+        Arguments,
+      )
+    };
+    todo!(&quot;read the buffer&quot;)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So if we got a count of 0, of if the buffer is still null,
+then there was some sort of problem.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>if tchar_count_excluding_null == 0 || buffer.is_null() {
+  // some sort of problem happened. we can't usefully get_last_error since
+  // Display formatting doesn't let you give an error value.
+  return Err(core::fmt::Error);
+} else {
+  todo!()
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>If there was no problem then we need to access the buffer.
+The simplest way is to turn it into a slice:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    } else {
+      let buffer_slice: &amp;[u16] = unsafe {
+        core::slice::from_raw_parts(buffer, tchar_count_excluding_null as usize)
+      };
+      todo!()
+    }
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now we can decode the data with <a href="https://doc.rust-lang.org/core/char/fn.decode_utf16.html">decode_utf16</a>.
+This iterates over the <code>u16</code> values, producing <code>Result&lt;char, DecodeUtf16Error&gt;</code> as it goes.
+If there was any decoding error, let's just use the standard <a href="https://en.wikipedia.org/wiki/Specials_(Unicode_block)#Replacement_character">Unicode Replacement Character</a> instead.
+Then we put whatever character we've got into the output.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>for decode_result in
+  core::char::decode_utf16(buffer_slice.iter().copied())
+{
+  let ch = decode_result.unwrap_or('�');
+  write!(f, &quot;{}&quot;, ch)?;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Cool.
+All done?
+Ah, not quite.</p>
+<p>Remember how we had <code>FormatMessageW</code> allocate the buffer for us?
+We need to free that buffer or we'll have a memory leak.
+A memory leak is <em>safe</em>, but it's still <em>bad</em>.</p>
+<p>There's more than one allocation system within Windows.
+To free this memory, <code>FormatMessageW</code> says that we need to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-localfree">LocalFree</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub type HLOCAL = HANDLE;
+#[link(name = &quot;Kernel32&quot;)]
+extern &quot;system&quot; {
+  /// [`LocalFree`](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-localfree)
+  pub fn LocalFree(hMem: HLOCAL) -&gt; HLOCAL;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So where's our call to <code>FreeLocal</code> go?
+At the end, right?
+Except we also have all those <code>?</code> operators on the writing.
+Any of those can early return from the function.</p>
+<p>Let's use the magic of <code>Drop</code> to solve our problem.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct OnDropLocalFree(HLOCAL);
+impl Drop for OnDropLocalFree {
+  fn drop(&amp;mut self) {
+    unsafe { LocalFree(self.0) };
+  }
+}
+let _on_drop = OnDropLocalFree(buffer as HLOCAL);
+let buffer_slice: &amp;[u16] = unsafe {
+  core::slice::from_raw_parts(buffer, tchar_count_excluding_null as usize)
+};
+for decode_result in
+  core::char::decode_utf16(buffer_slice.iter().copied())
+{
+  let ch = decode_result.unwrap_or('�');
+  write!(f, &quot;{}&quot;, ch)?;
+}
+Ok(())
+<span class="boring">}
+</span></code></pre></pre>
+<p>Isn't that cool?
+I think it's pretty cool.</p>
+<p>One small note: we have to be sure to bind it to a local variable.
+If we didn't bind it to a local variable, or if we bound it to the special <code>_</code> variable,
+then the struct would drop <em>immediately</em> (before we read the buffer),
+and then things would go very wrong.</p>
+<p>If we test it out with error code 0, we can see &quot;The operation completed successfully.\r\n&quot;.
+Hmm, let's eat up those newline characters though. We didn't want those.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>match decode_result {
+  Ok('\r') | Ok('\n') =&gt; write!(f, &quot; &quot;)?,
+  Ok(ch) =&gt; write!(f, &quot;{}&quot;, ch)?,
+  Err(_) =&gt; write!(f, &quot;�&quot;)?,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>that's better.</p>
+<p>One other note: if the 29th bit is set, then it's an application error.
+The system doesn't know how to format those, so we won't even ask it.
+Instead, we'll just show display that and return early.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    if self.0 &amp; (1 &lt;&lt; 29) &gt; 0 {
+      return write!(f, &quot;Win32ApplicationError({})&quot;, self.0);
+    }
+<span class="boring">}
+</span></code></pre></pre>
+<p>We want our error getting function to use this great new type we worked on:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gets the thread-local last-error code value.
+///
+/// See [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror)
+pub fn get_last_error() -&gt; Win32Error {
+  Win32Error(unsafe { GetLastError() })
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then we can update our stuff that returns <code>Result</code> types to use this error type.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn load_predefined_cursor(cursor: IDCursor) -&gt; Result&lt;HCURSOR, Win32Error&gt; {
+  // ...
+}
+
+pub unsafe fn register_class(
+  window_class: &amp;WNDCLASSW,
+) -&gt; Result&lt;ATOM, Win32Error&gt; {
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>There's also the <a href="https://doc.rust-lang.org/std/error/trait.Error.html">std::error::Error</a> trait.
+It's a bit of a mess right now, but there's a Working Group trying to develop things to be better in the future.
+At the moment, we might as well implement <code>std::error::Error</code> for our error type,
+just to be potentially more compatible with the rest of the Rust ecosystem.
+It's not like we even have to do anything, it's all default methods:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl std::error::Error for Win32Error {}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#window-creation" id="window-creation">Window Creation</a></h2>
+<p>The next <code>unsafe</code> function that our <code>main</code> calls is <code>CreateWindowExW</code>.
+This one is one heck of a swiss-army-chainsaw of a function.
+See, it turns out that, in Win32, not only are the things we think of as windows &quot;windows&quot;,
+but <em>tons</em> of the GUI elements are &quot;windows&quot; too.
+It's all windows, everywhere, all over the place.</p>
+<p>So <code>CreateWindowExW</code> has like a million options it can do.
+It also has a ton of arguments that can't be easily verified.
+It's just as bad as <code>register_class</code>,
+the only difference is that the arguments are passed as arguments,
+instead of being stuffed into a struct and then passed as a single struct.</p>
+<p>Like we did with with <code>register_class</code>,
+we're gonna basically skip on the verification and leave it as <code>unsafe</code>.
+What we will do is give it a <code>Result</code> for the output,
+so that we enforce the error handling on ourselves.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Creates a window.
+///
+/// See [`CreateWindowExW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw)
+pub unsafe fn create_window_ex_w(
+  ex_style: DWORD, class_name: LPCWSTR, window_name: LPCWSTR, style: DWORD,
+  x: c_int, y: c_int, width: c_int, height: c_int, parent: HWND, menu: HMENU,
+  instance: HINSTANCE, param: LPVOID,
+) -&gt; Result&lt;HWND, Win32Error&gt; {
+  let hwnd = CreateWindowExW(
+    ex_style,
+    class_name,
+    window_name,
+    style,
+    x,
+    y,
+    width,
+    height,
+    parent,
+    menu,
+    instance,
+    param,
+  );
+  if hwnd.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hwnd)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ugh.
+Are we really adding value here?
+Isn't the point to like, you know, cut down on accidents?
+Let's simplify this.</p>
+<ul>
+<li>First of all, we'll just accept <code>&amp;str</code> and then make wide strings ourselves.
+This lets us use string literals, and the extra allocation isn't a huge deal.
+We're already calling the OS to make a window, so this isn't a &quot;hot path&quot; function.</li>
+<li>Next, we won't accept <code>ex_style</code> or <code>style</code> values.
+We'll just pick some &quot;good default&quot; values to use.
+Since a user can always just bypass our decision if they really want to
+(by calling <code>CreateWindowExW</code> themselves), it's fine.</li>
+<li>Instead of accepting <code>x</code> and <code>y</code>, we'll just take an <code>Option&lt;[i32;2]&gt;</code> as the position.
+If you give a <code>Some</code> then it uses the two array values as the <code>x</code> and <code>y</code>.
+If you give a <code>None</code> then both <code>x</code> and <code>y</code> will be <code>CW_USEDEFAULT</code>, which gives a default position.
+This is <em>much</em> simpler than the normal rules for how <code>CW_USEDEFAULT</code> works.
+The normal rules seriously take up about two paragraphs of the <code>CreateWindowExW</code> documentation.</li>
+<li>Also, the window size can be <code>[i32; 2]</code>.
+It doesn't seem particularly useful to keep the ability to have a default size.
+It's not a huge burden to have the caller always pick a size.</li>
+<li>We don't need to specify a parent window.
+We'll always pass null, so that's one less thing for the caller to think about.</li>
+<li>We don't need to specify a custom menu to use.
+A null argument here means to use the class window,
+so if we wanna change the menu we'd change it on the window class.
+Again, one less thing for the caller to think about in the 99% case.</li>
+<li>The instance isn't useful to pass in,
+we can just have <code>create_app_window</code> look up the instance itself.</li>
+<li>We'll rename <code>param</code> to <code>create_param</code>.
+Normally, the styles used can change the meaning of this pointer.
+With the styles we're using, this will be the argument to the <code>WM_NCCREATE</code> event.</li>
+</ul>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub unsafe fn create_app_window(
+  class_name: &amp;str, window_name: &amp;str, position: Option&lt;[i32; 2]&gt;,
+  [width, height]: [i32; 2], create_param: LPVOID,
+) -&gt; Result&lt;HWND, Win32Error&gt; {
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>That's a <em>lot</em> less for the caller to think about.
+We can call it at moderate improvement.</p>
+<h2><a class="header" href="#messages" id="messages">Messages</a></h2>
+<p>Next would be <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow">ShowWindow</a>,
+but I'm not sure we can provide much help there.
+We don't have a general window abstraction where we can be sure that a <code>HWND</code> is real or not.
+So even if we made an enum for the second arg, it'd be an <code>unsafe</code> function overall.
+There's also no error value to help fix up into an <code>Option</code> or <code>Result</code>.
+I suppose we'll skip over it for now.</p>
+<p>Instead, let's have a look at <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew">GetMessageW</a>.
+Here's a function where I think we can make some improvements.</p>
+<p>The basic output of <code>GetMessageW</code> is 0 for a quit event,
+or non-zero for anything else,
+and if the &quot;anything else&quot; was an error, then it's specifically -1.
+That's because it's <em>kinda</em> intended to be used with C's looping constructs,
+where test expressions evaluating to 0 will cancel the loop.
+Except, it doesn't work well with C loops because you end up missing the error when you get -1
+(which isn't 0, so you'd continue the loop).
+In fact MSDN <em>specifically</em> tells you to not write <code>while (GetMessage(lpMsg, hWnd, 0, 0)) {</code>,
+because it does the wrong thing,
+and presumably enough people wrote that and asked why it went wrong that they put it on the docs to not do that.
+So I think we can easily say that they picked the wrong sentinel values for <code>GetMessageW</code> to use.
+Still, they are what they are,
+we'll just adapt a bit.
+Instead, let's focus on if we got a message or not,
+and then we can worry about if it was a quit event in the calling code.
+What we want is something like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gets a message from the thread's message queue.
+///
+/// The message can be for any window from this thread,
+/// or it can be a non-window message as well.
+///
+/// See [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
+#[inline(always)]
+pub fn get_any_message() -&gt; Result&lt;MSG, Win32Error&gt; {
+  let mut msg = MSG::default();
+  let output = unsafe { GetMessageW(&amp;mut msg, null_mut(), 0, 0) };
+  if output == -1 {
+    Err(get_last_error())
+  } else {
+    Ok(msg)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then in <code>main</code> adjust how we call it just a bit:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>loop {
+  match get_any_message() {
+    Ok(msg) =&gt; {
+      if msg.message == WM_QUIT {
+        break;
+      }
+      unsafe {
+        TranslateMessage(&amp;msg);
+        DispatchMessageW(&amp;msg);
+      }
+    }
+    Err(e) =&gt; panic!(&quot;Error when getting from the message queue: {}&quot;, e),
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Next, we can make <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage">TranslateMessage</a> safe too.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Translates virtual-key messages into character messages.
+///
+/// The character messages go into your thread's message queue,
+/// and you'll see them if you continue to consume messages.
+///
+/// **Returns:**
+/// * `true` if the message was `WM_KEYDOWN`, `WM_KEYUP`, `WM_SYSKEYDOWN`, or
+///   `WM_SYSKEYUP`.
+/// * `true` for any other message type that generated a character message.
+/// * otherwise `false`
+///
+/// See [`TranslateMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
+pub fn translate_message(msg: &amp;MSG) -&gt; bool {
+  0 != unsafe { TranslateMessage(msg) }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Can we make <code>DispatchMessageW</code> safe just as easily?
+Sadly, no.
+Using <code>DispatchMessageW</code> causes the window procedure to be called,
+<em>or</em> it can cause a timer callback to be called.
+Since a call to <code>DispatchMessageW</code> with a funky <code>MSG</code> value could make arbitrary functions get called,
+and with arbitrary arguments,
+then we cannot wrap <code>DispatchMessageW</code> in a safe way.
+In the case of <code>main</code>, we can see that we're not messing with the fields of the message,
+everything in the message is what the operating system said,
+so we know the message content is &quot;real&quot; content.
+However, if we put a safe version of <code>DispatchMessageW</code> into our library,
+that library code wouldn't actually be correct for all possible message inputs.</p>
+<h2><a class="header" href="#wrapping-up" id="wrapping-up">Wrapping Up</a></h2>
+<p>Just about everything else in our <code>window_procedure</code> function needs to stay unsafe.
+It's almost all stuff that's taking HWND or HDC values,
+which we still haven't really made a system for ensuring that they're correct.
+We just have to trust ourselves to not do a bad thing.</p>
+<p>That said, I think we've made some pretty good improvements in a few places,
+and several of these things are much nicer to use now.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="opening_a_win32_window.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="opening_a_win32_window.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
