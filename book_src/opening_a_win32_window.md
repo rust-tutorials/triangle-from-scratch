@@ -1641,3 +1641,4 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
 Well now our cursor works just fine!
 
 The day is saved!
+
