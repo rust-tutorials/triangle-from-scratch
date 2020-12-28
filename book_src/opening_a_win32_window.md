@@ -32,7 +32,7 @@ This happens with functions that process textual data, as well as with structs a
 In this case of `WNDCLASSA` / `WNDCLASSW`, a window class has, as part of it, a menu name as well as a class name.
 These names are textual, and so we get both an `A` and a `W` version.
 
-The `A` and `W` letters come from the two types of string that the windows API lets you use: ANSI strings and "wide" strings".
+The `A` and `W` letters come from the two types of string that the windows API lets you use: ANSI strings and "wide" strings.
 * ANSI strings use C's `char` type.
   They don't have a specified encoding.
   If you store anything other than ASCII data in an ANSI string, the results vary based on context.
