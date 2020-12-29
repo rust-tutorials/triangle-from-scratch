@@ -1232,16 +1232,19 @@ Did that fix it?
 Huh. Nope.
 
 Sometimes you're really sure that you know what's wrong,
-it's just obvious,
-but you didn't know at all and you basically wasted your time.
+it's just *so* obvious,
+but you didn't know at all,
+and you basically wasted your time with some dead end.
 This is frustrating, but it's okay.
-Happens to all of us.
-Oh well.
+We all make mistakes.
 
+In some web searches about this problem,
 I've heard that the mouse cursor sometimes is heuristic in Windows,
 and once Windows thinks that your app is behaving properly,
-it'll run the mouse cursor better for you.
-Maybe if we add more to our program it'll start working right.
+it'll make the mouse cursor so the right thing for you.
+I don't have any idea if this is true or not.
+If it is true, then maybe once we add more to our program the mouse cursor will start working right.
+Let's move on, we can come back to this later.
 
 ## Painting The Window
 
@@ -1278,7 +1281,7 @@ unsafe_impl_default_zeroed!(RECT);
 This is all becoming routine by now, I hope.
 
 They want us to use [BeginPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint),
-then FillRect](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect) on the whole canvas,
+then [FillRect](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect) on the whole canvas,
 then [EndPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint).
 Sounds easy enough to do.
 
