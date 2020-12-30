@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Opening a Win32 Window - Triangle From Scratch</title>
+        <title>Win32 - Triangle From Scratch</title>
         
         
 
@@ -18,28 +18,28 @@
         <meta name="theme-color" content="#ffffff" />
 
         
-        <link rel="icon" href="favicon.svg">
+        <link rel="icon" href="../favicon.svg">
         
         
-        <link rel="shortcut icon" href="favicon.png">
+        <link rel="shortcut icon" href="../favicon.png">
         
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
         
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="stylesheet" href="../css/print.css" media="print">
         
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
         
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
         
@@ -49,7 +49,7 @@
     <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="opening_a_win32_window.html" class="active"><strong aria-hidden="true">1.</strong> Opening a Win32 Window</a></li><li class="chapter-item expanded "><a href="win32_window_cleanup.html"><strong aria-hidden="true">2.</strong> Win32 Window Cleanup</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html" class="active"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -131,7 +131,7 @@
 
                     <div class="right-buttons">
                         
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         
@@ -164,16 +164,19 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#opening-a-win32-window" id="opening-a-win32-window">Opening a Win32 Window</a></h1>
-<p>Alright, if we wanna draw a triangle, we have to have a window to draw the triangle in.</p>
-<p>Uh, how do we do that? For the sake of the lesson, let's imagine I don't know how to do that.</p>
+<p>On Windows, the C oriented API is called &quot;Win32&quot;.</p>
+<p>There's also some C++ oriented APIs for interacting with Windows as well (called COM and WinRT).</p>
+<p>It's <em>much</em> easier for Rust to bind to and interact with a C oriented API than a C++ oriented API,
+so we'll start with just using Win32 to interact with Windows.</p>
 <h2><a class="header" href="#search-the-web" id="search-the-web">Search The Web</a></h2>
-<p>Okay so we don't know what to do, let's ask the internet nicely.
+<p>Okay, for the sake of the lesson let's pretend that <em>even I</em> don't know what to do.</p>
+<p>Let's start by asking the internet nicely.
 Something like <a href="https://duckduckgo.com/?q=open+a+window+win32">&quot;open a window win32&quot;</a> sounds right.
 Hey look, that <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">first result</a> is straight from Microsoft.
 It's a whole little tutorial on how to open a window.
 Perfect, just what we wanted.</p>
 <h2><a class="header" href="#starting-the-win32-windowing-tutorial" id="starting-the-win32-windowing-tutorial">Starting The Win32 Windowing Tutorial</a></h2>
-<p>Alright, let's read the first paragraph of the <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
+<p>Let's read the first paragraph of the <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
 that we just found...</p>
 <p>To summarize the opening portion:</p>
 <ul>
@@ -586,12 +589,10 @@ Keeping in mind that <code>WNDCLASS</code> is an alias for either <code>WNDCLASS
 depending on how you're building the C++ program,
 and also keeping in mind that we're always going to be using the <code>W</code> versions of things,
 then the equivalent Rust would be something like this:</p>
-<pre><pre class="playground"><code class="language-rust edition2018">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let mut wc: WNDCLASSW = unsafe { core::mem::zeroed() };
-<span class="boring">}
-</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main () {
+  let mut wc: WNDCLASSW = unsafe { core::mem::zeroed() };
+}
+</code></pre></pre>
 <p>We haven't even called the OS and we've already got <code>unsafe</code> stuff going on.</p>
 <p>But... does this need to be <code>unsafe</code> that everyone thinks about?
 Is this the kind of unsafe action that we need to evaluate the correctness of every type we do it?
@@ -639,12 +640,10 @@ then you'd sure have a problem on your hand.</p>
 <p>Any time a macro hides away some sort of unsafe thing, you should put unsafe in the name.
 It's a simple convention, but it keeps it obvious that the macro can go wrong if misused.</p>
 <p>Now our rust can look like this:</p>
-<pre><pre class="playground"><code class="language-rust edition2018">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let mut wc = WNDCLASSW::default();
-<span class="boring">}
-</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  let mut wc = WNDCLASSW::default();
+}
+</code></pre></pre>
 <p>And that's so much nicer, at least to my eyes.</p>
 <h3><a class="header" href="#writing-a-window-procedure" id="writing-a-window-procedure">Writing a Window Procedure</a></h3>
 <p>The guide says</p>
@@ -715,7 +714,8 @@ We do this with an <a href="https://doc.rust-lang.org/reference/items/external-b
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>extern ABI {
+</span>// EXAMPLE USAGE
+extern ABI {
   fn NAME1(args) -&gt; output;
   
   fn NAME2(args) -&gt; output;
@@ -735,7 +735,8 @@ Well, you can use a build script, or you can put it right on the extern block.</
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>#[link(name = &quot;LibraryName&quot;)]
+</span>// EXAMPLE USAGE
+#[link(name = &quot;LibraryName&quot;)]
 extern ABI {
   fn NAME1(args) -&gt; output;
 }
@@ -970,28 +971,28 @@ To show the window—that is, make the window visible —pass the window handle 
 </blockquote>
 <p>Hey, look, the MSDN docs are using some of that extended typography we mentioned before.</p>
 <p>Apparently we want our window creation to look something like this:</p>
-<pre><pre class="playground"><code class="language-rust edition2018">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let sample_window_name_wn = wide_null(&quot;Sample Window Name&quot;);
-let hwnd = unsafe {
-  CreateWindowExW(
-    0,
-    sample_window_class_wn.as_ptr(),
-    sample_window_name_wn.as_ptr(),
-    WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    core::ptr::null_mut(),
-    core::ptr::null_mut(),
-    hInstance,
-    core::ptr::null_mut(),
-  )
-};
-<span class="boring">}
-</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  // first register the class, as before
+
+  let sample_window_name_wn = wide_null(&quot;Sample Window Name&quot;);
+  let hwnd = unsafe {
+    CreateWindowExW(
+      0,
+      sample_window_class_wn.as_ptr(),
+      sample_window_name_wn.as_ptr(),
+      WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      core::ptr::null_mut(),
+      core::ptr::null_mut(),
+      hInstance,
+      core::ptr::null_mut(),
+    )
+  };
+}
+</code></pre></pre>
 <p>Now we just have to define <code>WS_OVERLAPPEDWINDOW</code> and <code>CW_USEDEFAULT</code>.
 These are defined in the header files as C macro values, which expand to literals.
 In Rust, we <em>could</em> define them as macros, but it'd be a little silly.
@@ -1056,17 +1057,12 @@ We just did it to fill in a little bit so the compiler would be cool.</p>
 <p>Now that we're tying to turn on the program on for real (even for a second),
 we need a real window procedure.
 But we don't know how to write one yet.
-Never fear, there's a <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw">DefWindowProcW</a>
-function that you can use to handle any messages you don't know how to handle.
+Never fear, there's a function called <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw">DefWindowProcW</a>.
+It's the &quot;Default Window Procedure&quot;, that you can use to handle any messages you don't want to handle.
 Right now, for us, that's all of them.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">fn main() {
-  let hInstance = unsafe { GetModuleHandleW(null()) };
-  let sample_window_class_wn = wide_null(&quot;Sample Window Class&quot;);
-
-  let mut wc = WNDCLASSW::default();
+  // ...
   wc.lpfnWndProc = Some(DefWindowProcW);
-  wc.hInstance = hInstance;
-  wc.lpszClassName = sample_window_class_wn.as_ptr();
   // ...
 }
 
@@ -1138,21 +1134,21 @@ extern &quot;system&quot; {
 <span class="boring">}
 </span></code></pre></pre>
 <p>We have to get them in a loop of course, because we'll be getting a whole lot of them.</p>
-<pre><pre class="playground"><code class="language-rust edition2018">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>let mut msg = MSG::default();
-loop {
-  let message_return = unsafe { GetMessageW(&amp;mut msg, null_mut(), 0, 0) };
-  if message_return == 0 {
-    break;
-  } else if message_return == -1 {
-    let last_error = unsafe { GetLastError() };
-    panic!(&quot;Error with `GetMessageW`, error code: {}&quot;, last_error);
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  // first open the window
+
+  let mut msg = MSG::default();
+  loop {
+    let message_return = unsafe { GetMessageW(&amp;mut msg, null_mut(), 0, 0) };
+    if message_return == 0 {
+      break;
+    } else if message_return == -1 {
+      let last_error = unsafe { GetLastError() };
+      panic!(&quot;Error with `GetMessageW`, error code: {}&quot;, last_error);
+    }
   }
 }
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre></pre>
 <p>Except we're missing <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage">TranslateMessage</a>
 and <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dispatchmessagew">DispatchMessageW</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
@@ -1230,7 +1226,8 @@ We'll assume that 0 is the &quot;normal&quot; response and build our setup aroun
 <span class="boring">}
 </span></code></pre></pre>
 <p>One little problem here is that <code>DestroyWindow</code> and <code>PostQuitMessage</code> have different return types.
-Even though we're ignoring the output of <code>DestroyWindow</code>, it's a type error to have it like this.</p>
+Even though we're ignoring the output of <code>DestroyWindow</code>, it's a type error to have it like this.
+We can suppress the output of <code>DestroyWindow</code> by putting it in a block and having a <code>;</code> after it.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1248,7 +1245,7 @@ Even though we're ignoring the output of <code>DestroyWindow</code>, it's a type
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>Ehhhhhh, I'm not sure if I'm a fan of rustfmt making it look like that.</p>
+<p>Ehhhhhh, I'm not sure if I'm a fan of <code>rustfmt</code> making it look like that.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1266,7 +1263,7 @@ Even though we're ignoring the output of <code>DestroyWindow</code>, it's a type
 </span></code></pre></pre>
 <p>Oh, yeah, that's the good stuff.
 We can use <code>drop</code> to throw away the <code>i32</code> value,
-so we don't need the <code>;</code> and braces,
+so then we don't need the <code>;</code> and braces,
 so rustfmt keeps it on a single line.
 I am <em>all about</em> that compact code stuff.</p>
 <p>Now we can open the window and click for it to close and the program actually terminates.</p>
@@ -1280,12 +1277,12 @@ That's mostly our fault, we left the cursor for our Window Class as null.</p>
 we can assign a cursor to our window class,
 and then the default window procedure will set the cursor to be the right image at the right time.</p>
 <p>We're supposed to call it with something like:</p>
-<pre><pre class="playground"><code class="language-rust edition2018">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
-<span class="boring">}
-</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  // ...
+  wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+  // ...
+}
+</code></pre></pre>
 <p>And the extern function is easy to do:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
@@ -1477,7 +1474,8 @@ const WM_CREATE: u32 = 0x0001;
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>  match Msg {
+</span>// in the window_procedure
+  match Msg {
     WM_NCCREATE =&gt; {
       println!(&quot;NC Create&quot;);
       return 1;
@@ -1509,7 +1507,8 @@ Well, right now our window creation should always proceed, so here we go:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>WM_NCCREATE =&gt; {
+</span>// in the window_procedure
+WM_NCCREATE =&gt; {
   println!(&quot;NC Create&quot;);
   return 1;
 }
@@ -1544,7 +1543,8 @@ Uh, just to pick something, let's pass our message a pointer to the number 5.</p
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+</span>// in main
+let lparam: *mut i32 = Box::leak(Box::new(5_i32));
 let hwnd = unsafe {
   CreateWindowExW(
     0,
@@ -1761,13 +1761,13 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../opening_a_window.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="win32_window_cleanup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../opening_a_window/win32_cleanup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -1779,13 +1779,13 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../opening_a_window.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="win32_window_cleanup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../opening_a_window/win32_cleanup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -1808,14 +1808,14 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
         
 
         
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
         
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
         
