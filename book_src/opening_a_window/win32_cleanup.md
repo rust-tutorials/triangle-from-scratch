@@ -1,7 +1,8 @@
 # Win32 Window Cleanup
 
-During the last article I said that we'd just write all our code into `main.rs`,
-and then we could sort it into a library later.
+During our introduction to Win32 I said that we'd just write all our code into `main.rs`,
+and then we could sort it into the library later.
+
 Well, later is now.
 
 ## New Files

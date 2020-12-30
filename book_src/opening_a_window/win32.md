@@ -1,13 +1,18 @@
 
 # Opening a Win32 Window
 
-Alright, if we wanna draw a triangle, we have to have a window to draw the triangle in.
+On Windows, the C oriented API is called "Win32".
 
-Uh, how do we do that? For the sake of the lesson, let's imagine I don't know how to do that.
+There's also some C++ oriented APIs for interacting with Windows as well (called COM and WinRT).
+
+It's *much* easier for Rust to bind to and interact with a C oriented API than a C++ oriented API,
+so we'll start with just using Win32 to interact with Windows.
 
 ## Search The Web
 
-Okay so we don't know what to do, let's ask the internet nicely.
+Okay, for the sake of the lesson let's pretend that *even I* don't know what to do.
+
+Let's start by asking the internet nicely.
 Something like ["open a window win32"](https://duckduckgo.com/?q=open+a+window+win32) sounds right.
 Hey look, that [first result](https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window) is straight from Microsoft.
 It's a whole little tutorial on how to open a window.
@@ -15,7 +20,7 @@ Perfect, just what we wanted.
 
 ## Starting The Win32 Windowing Tutorial
 
-Alright, let's read the first paragraph of the [windowing tutorial](https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window)
+Let's read the first paragraph of the [windowing tutorial](https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window)
 that we just found...
 
 To summarize the opening portion:
@@ -470,7 +475,9 @@ depending on how you're building the C++ program,
 and also keeping in mind that we're always going to be using the `W` versions of things,
 then the equivalent Rust would be something like this:
 ```rust
-let mut wc: WNDCLASSW = unsafe { core::mem::zeroed() };
+fn main () {
+  let mut wc: WNDCLASSW = unsafe { core::mem::zeroed() };
+}
 ```
 We haven't even called the OS and we've already got `unsafe` stuff going on.
 
@@ -519,7 +526,9 @@ It's a simple convention, but it keeps it obvious that the macro can go wrong if
 
 Now our rust can look like this:
 ```rust
-let mut wc = WNDCLASSW::default();
+fn main() {
+  let mut wc = WNDCLASSW::default();
+}
 ```
 And that's so much nicer, at least to my eyes.
 
@@ -602,6 +611,7 @@ We do this with an [external block](https://doc.rust-lang.org/reference/items/ex
 
 An external block just declares the signature of a function, like this:
 ```rust
+// EXAMPLE USAGE
 extern ABI {
   fn NAME1(args) -> output;
   
@@ -622,6 +632,7 @@ But who tells the linker what to link with to find the external functions?
 Well, you can use a build script, or you can put it right on the extern block.
 
 ```rust
+// EXAMPLE USAGE
 #[link(name = "LibraryName")]
 extern ABI {
   fn NAME1(args) -> output;
@@ -874,23 +885,27 @@ Hey, look, the MSDN docs are using some of that extended typography we mentioned
 
 Apparently we want our window creation to look something like this:
 ```rust
-let sample_window_name_wn = wide_null("Sample Window Name");
-let hwnd = unsafe {
-  CreateWindowExW(
-    0,
-    sample_window_class_wn.as_ptr(),
-    sample_window_name_wn.as_ptr(),
-    WS_OVERLAPPEDWINDOW,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    CW_USEDEFAULT,
-    core::ptr::null_mut(),
-    core::ptr::null_mut(),
-    hInstance,
-    core::ptr::null_mut(),
-  )
-};
+fn main() {
+  // first register the class, as before
+
+  let sample_window_name_wn = wide_null("Sample Window Name");
+  let hwnd = unsafe {
+    CreateWindowExW(
+      0,
+      sample_window_class_wn.as_ptr(),
+      sample_window_name_wn.as_ptr(),
+      WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      core::ptr::null_mut(),
+      core::ptr::null_mut(),
+      hInstance,
+      core::ptr::null_mut(),
+    )
+  };
+}
 ```
 
 Now we just have to define `WS_OVERLAPPEDWINDOW` and `CW_USEDEFAULT`.
@@ -955,19 +970,14 @@ We just did it to fill in a little bit so the compiler would be cool.
 Now that we're tying to turn on the program on for real (even for a second),
 we need a real window procedure.
 But we don't know how to write one yet.
-Never fear, there's a [DefWindowProcW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw)
-function that you can use to handle any messages you don't know how to handle.
+Never fear, there's a function called [DefWindowProcW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowprocw).
+It's the "Default Window Procedure", that you can use to handle any messages you don't want to handle.
 Right now, for us, that's all of them.
 
 ```rust
 fn main() {
-  let hInstance = unsafe { GetModuleHandleW(null()) };
-  let sample_window_class_wn = wide_null("Sample Window Class");
-
-  let mut wc = WNDCLASSW::default();
+  // ...
   wc.lpfnWndProc = Some(DefWindowProcW);
-  wc.hInstance = hInstance;
-  wc.lpszClassName = sample_window_class_wn.as_ptr();
   // ...
 }
 
@@ -1041,14 +1051,18 @@ extern "system" {
 
 We have to get them in a loop of course, because we'll be getting a whole lot of them.
 ```rust
-let mut msg = MSG::default();
-loop {
-  let message_return = unsafe { GetMessageW(&mut msg, null_mut(), 0, 0) };
-  if message_return == 0 {
-    break;
-  } else if message_return == -1 {
-    let last_error = unsafe { GetLastError() };
-    panic!("Error with `GetMessageW`, error code: {}", last_error);
+fn main() {
+  // first open the window
+
+  let mut msg = MSG::default();
+  loop {
+    let message_return = unsafe { GetMessageW(&mut msg, null_mut(), 0, 0) };
+    if message_return == 0 {
+      break;
+    } else if message_return == -1 {
+      let last_error = unsafe { GetLastError() };
+      panic!("Error with `GetMessageW`, error code: {}", last_error);
+    }
   }
 }
 ```
@@ -1129,6 +1143,7 @@ pub unsafe extern "system" fn window_procedure(
 ```
 One little problem here is that `DestroyWindow` and `PostQuitMessage` have different return types.
 Even though we're ignoring the output of `DestroyWindow`, it's a type error to have it like this.
+We can suppress the output of `DestroyWindow` by putting it in a block and having a `;` after it.
 
 ```rust
 pub unsafe extern "system" fn window_procedure(
@@ -1144,7 +1159,7 @@ pub unsafe extern "system" fn window_procedure(
   0
 }
 ```
-Ehhhhhh, I'm not sure if I'm a fan of rustfmt making it look like that.
+Ehhhhhh, I'm not sure if I'm a fan of `rustfmt` making it look like that.
 
 ```rust
 pub unsafe extern "system" fn window_procedure(
@@ -1160,7 +1175,7 @@ pub unsafe extern "system" fn window_procedure(
 ```
 Oh, yeah, that's the good stuff.
 We can use `drop` to throw away the `i32` value,
-so we don't need the `;` and braces,
+so then we don't need the `;` and braces,
 so rustfmt keeps it on a single line.
 I am *all about* that compact code stuff.
 
@@ -1180,7 +1195,11 @@ and then the default window procedure will set the cursor to be the right image 
 
 We're supposed to call it with something like:
 ```rust
-wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+fn main() {
+  // ...
+  wc.hCursor = unsafe { LoadCursorW(hInstance, IDC_ARROW) };
+  // ...
+}
 ```
 
 And the extern function is easy to do:
@@ -1369,6 +1388,7 @@ const WM_CREATE: u32 = 0x0001;
 
 And we check for them in our window procedure:
 ```rust
+// in the window_procedure
   match Msg {
     WM_NCCREATE => {
       println!("NC Create");
@@ -1400,6 +1420,7 @@ Okay, so far all of our messages have asked us to just *always* return 0 when th
 and this is the first message we've been handling that we had to decide to return 0 or not.
 Well, right now our window creation should always proceed, so here we go:
 ```rust
+// in the window_procedure
 WM_NCCREATE => {
   println!("NC Create");
   return 1;
@@ -1437,6 +1458,7 @@ Right, so, we have to have a void pointer to pass to the message.
 Uh, just to pick something, let's pass our message a pointer to the number 5.
 
 ```rust
+// in main
 let lparam: *mut i32 = Box::leak(Box::new(5_i32));
 let hwnd = unsafe {
   CreateWindowExW(
