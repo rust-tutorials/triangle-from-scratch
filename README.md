@@ -1,29 +1,27 @@
 
 # Triangle From Scratch
 
-This is an educational series about drawing a triangle without using any outside crates.
+## This Is A Tutorial Repository
 
-Specifically, the rules are:
+Feel free to look at the source code,
+but the crate is not on crates.io,
+and the majority of the project's "value" is in the mdbook articles that explain what's going on.
 
-1) We can only put a crate into the `[dependencies]` section of `Cargo.toml` if it's a crate that we wrote ourselves, as part of this project.
-2) We **can** still use Rust's standard library. Since all Rust programs can import from the standard library without a `[dependencies]` entry, it's fair game.
+[You Can Read The Book On The GitHub Pages Site](https://rust-tutorials.github.io/triangle-from-scratch/)
 
-Without any external crates, we'll have to write our own operating system bindings.
-It's not difficult code to write, there's just a lot of background details you need to understand first.
-That's where most of our focus will go, on learning how that works.
-There's a lot less focus spent on the literal "triangle drawing" part, which is usually fairly easy.
+## Project Organization
 
-Expected subjects include:
+The `book_src/` contains the files to build the mdbook (`cargo install mdbook && mdbook build --open`).
 
-* Reading OS documentation (which usually assumes you're programming in C).
-* Understanding the C header files that describe the OS's public API.
-* Writing appropriate "raw" Rust bindings to that public API.
-* Creating ergonomic wrapper functions to make the API easily used with the rest of Rust.
-* Having those wrapper functions be fully safe (in the Rust sense) when possible, or at least making them as error-proof as we can.
+The `examples/` folder is an "archive" of completed, runnable examples based on the mdbook chapters.
 
-**Reminder:** The "absolutely no dependencies" thing is for demonstration purposes only.
-If you actually want to draw a triangle within a reasonable amount of development time, please do feel free to use dependencies.
-Depending on what you need to do, there's generally many good crates available.
+The crate's library portion (`src/lib.rs`, and sub-modules) contains the most easily reused code,
+based on work shown in the the mdbook chapters.
+
+The crate's binary portion (`src/main.rs`) is just scratch space.
+This is so that you can most easily use `cargo run` to test things out when doing work.
+The actual content of `main.rs` at any given moment is unimportant.
+All the valuable code is kept as an `example/` file when a tutorial chapter is completed.
 
 ## Licensing and Contribution
 
