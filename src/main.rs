@@ -31,7 +31,7 @@ fn main() {
     match get_any_message() {
       Ok(msg) => {
         if msg.message == WM_QUIT {
-          break;
+          std::process::exit(msg.wParam as i32);
         }
         translate_message(&msg);
         unsafe {
@@ -54,8 +54,7 @@ pub unsafe extern "system" fn window_procedure(
         return 0;
       }
       let boxed_i32_ptr = (*createstruct).lpCreateParams;
-      SetWindowLongPtrW(hwnd, GWLP_USERDATA, boxed_i32_ptr as LONG_PTR);
-      return 1;
+      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
     }
     WM_CREATE => println!("Create"),
     WM_CLOSE => {
@@ -72,19 +71,39 @@ pub unsafe extern "system" fn window_procedure(
       }
     }
     WM_DESTROY => {
-      let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut i32;
-      Box::from_raw(ptr);
-      println!("Cleaned up the box.");
-      PostQuitMessage(0);
+      match get_window_userdata(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          Box::from_raw(ptr);
+          println!("Cleaned up the box.");
+        }
+        Ok(_) => {
+          println!("userdata ptr is null, no cleanup")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr to clean it up: {}", e)
+        }
+      }
+      post_quit_message(0);
     }
     WM_PAINT => {
-      let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut i32;
-      println!("Current ptr: {}", *ptr);
-      *ptr += 1;
-      let mut ps = PAINTSTRUCT::default();
-      let hdc = BeginPaint(hwnd, &mut ps);
-      let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
-      EndPaint(hwnd, &ps);
+      match get_window_userdata(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          let ptr = ptr as *mut i32;
+          println!("Current ptr: {}", *ptr);
+          *ptr += 1;
+        }
+        Ok(_) => {
+          println!("userdata ptr is null")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr: {}", e)
+        }
+      }
+      do_some_painting(hwnd, |hdc, _erase_bg, target_rect| {
+        let _ = fill_rect_with_sys_color(hdc, &target_rect, SysColor::Window);
+        Ok(())
+      })
+      .unwrap_or_else(|e| println!("error during painting: {}", e));
     }
     _ => return DefWindowProcW(hwnd, msg, wparam, lparam),
   }

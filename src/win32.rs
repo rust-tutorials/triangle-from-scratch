@@ -4,6 +4,8 @@
 
 //! Module for stuff that's specific to the Win32 API on Windows.
 
+pub use core::ffi::c_void;
+
 use core::ptr::{null, null_mut};
 
 macro_rules! unsafe_impl_default_zeroed {
@@ -43,12 +45,12 @@ pub type LPARAM = LONG_PTR;
 pub type LPCWSTR = *const WCHAR;
 pub type LPMSG = *mut MSG;
 pub type LPPAINTSTRUCT = *mut PAINTSTRUCT;
-pub type LPVOID = *mut core::ffi::c_void;
-pub type LPCVOID = *const core::ffi::c_void;
+pub type LPVOID = *mut c_void;
+pub type LPCVOID = *const c_void;
 pub type va_list = *mut c_char;
 pub type LPWSTR = *mut WCHAR;
 pub type LRESULT = LONG_PTR;
-pub type PVOID = *mut core::ffi::c_void;
+pub type PVOID = *mut c_void;
 pub type UINT = c_uint;
 pub type UINT_PTR = usize;
 pub type ULONG_PTR = usize;
@@ -113,6 +115,7 @@ pub struct PAINTSTRUCT {
 unsafe_impl_default_zeroed!(PAINTSTRUCT);
 
 #[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RECT {
   pub left: LONG,
   pub top: LONG,
@@ -152,11 +155,53 @@ pub const WS_OVERLAPPEDWINDOW: u32 = WS_OVERLAPPED
   | WS_MAXIMIZEBOX;
 pub const CW_USEDEFAULT: c_int = 0x80000000_u32 as c_int;
 pub const SW_SHOW: c_int = 5;
+
+/// Sent as a signal that a window or an application should terminate.
+///
+/// * `wparam` / `lparam`: Not used.
+/// * Application Should Return: 0
 pub const WM_CLOSE: u32 = 0x0010;
+
+/// Sent when a window is being destroyed.
+///
+/// * `wparam` / `lparam`: Not used.
+/// * Application Should Return: 0
+/// * See [`WM_DESTROY`](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-destroy)
 pub const WM_DESTROY: u32 = 0x0002;
+
+/// Sent when the system or another application makes a request to paint a
+/// portion of an application's window.
+///
+/// * `wparam` / `lparam`: Not used.
+/// * Application Should Return: 0
+/// * See [`WM_PAINT`](https://docs.microsoft.com/en-us/windows/win32/gdi/wm-paint)
 pub const WM_PAINT: u32 = 0x000F;
+
+/// "Non-client Create". Sent prior to the [`WM_CREATE`] message when a window
+/// is first created.
+///
+/// * `wparam`: Not used.
+/// * `lparam`: Pointer to a `CREATESTRUCT`
+/// * Application Should Return: 1 to continue, 0 to cancel.
+/// * See [`WM_NCCREATE`](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-nccreate)
 pub const WM_NCCREATE: u32 = 0x0081;
+
+/// Sent when an application requests that a window be created by calling the
+/// `CreateWindowEx` function.
+///
+/// * `wparam`: Not used.
+/// * `lparam`: Pointer to a `CREATESTRUCT`
+/// * Application Should Return: 0 to continue, -1 to cancel.
+/// * See [`WM_CREATE`](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-create)
 pub const WM_CREATE: u32 = 0x0001;
+
+/// Indicates a request to terminate an application, and is generated when the
+/// application calls the [`PostQuitMessage`] function.
+///
+/// * `wparam` (on `MSG` struct): The exit code that was given to
+///   `PostQuitMessage`.
+/// * `lparam`: Not used.
+/// * See [`WM_QUIT`](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-quit)
 pub const WM_QUIT: u32 = 0x0012;
 pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 pub const COLOR_WINDOW: u32 = 5;
@@ -171,6 +216,9 @@ extern "system" {
 
   /// [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror)
   pub fn GetLastError() -> DWORD;
+
+  /// [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
+  pub fn SetLastError(dwErrCode: DWORD);
 
   /// [`FormatMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessagew)
   pub fn FormatMessageW(
@@ -316,7 +364,7 @@ pub fn load_predefined_cursor(cursor: IDCursor) -> Result<HCURSOR, Win32Error> {
 ///
 /// ## Safety
 ///
-/// All pointer fields of the struct must be valid.
+/// All pointer fields of the struct must be correct.
 ///
 /// See [`RegisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw)
 pub unsafe fn register_class(
@@ -335,6 +383,13 @@ pub unsafe fn register_class(
 /// See [`GetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror)
 pub fn get_last_error() -> Win32Error {
   Win32Error(unsafe { GetLastError() })
+}
+
+/// Sets the thread-local last-error code value.
+///
+/// See [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
+pub fn set_last_error(e: Win32Error) {
+  unsafe { SetLastError(e.0) }
 }
 
 /// Newtype wrapper for a Win32 error code.
@@ -484,4 +539,151 @@ pub fn get_any_message() -> Result<MSG, Win32Error> {
 /// See [`TranslateMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
 pub fn translate_message(msg: &MSG) -> bool {
   0 != unsafe { TranslateMessage(msg) }
+}
+
+/// Sets the "userdata" pointer of the window (`GWLP_USERDATA`).
+///
+/// **Returns:** The previous userdata pointer.
+///
+/// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+pub unsafe fn set_window_userdata(
+  hwnd: HWND, ptr: *mut c_void,
+) -> Result<*mut c_void, Win32Error> {
+  set_last_error(Win32Error(0));
+  let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
+  if out == 0 {
+    // if output is 0, it's only a "real" error if the last_error is non-zero
+    let last_error = get_last_error();
+    if last_error.0 != 0 {
+      Err(last_error)
+    } else {
+      Ok(out as *mut c_void)
+    }
+  } else {
+    Ok(out as *mut c_void)
+  }
+}
+
+/// Gets the "userdata" pointer of the window (`GWLP_USERDATA`).
+///
+/// **Returns:** The userdata pointer.
+///
+/// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
+pub unsafe fn get_window_userdata(
+  hwnd: HWND,
+) -> Result<*mut c_void, Win32Error> {
+  set_last_error(Win32Error(0));
+  let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+  if out == 0 {
+    // if output is 0, it's only a "real" error if the last_error is non-zero
+    let last_error = get_last_error();
+    if last_error.0 != 0 {
+      Err(last_error)
+    } else {
+      Ok(out as *mut c_void)
+    }
+  } else {
+    Ok(out as *mut c_void)
+  }
+}
+
+/// Indicates to the system that a thread has made a request to terminate
+/// (quit).
+///
+/// The exit code becomes the `wparam` of the [`WM_QUIT`] message your message
+/// loop eventually gets.
+///
+/// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
+pub fn post_quit_message(exit_code: c_int) {
+  unsafe { PostQuitMessage(exit_code) }
+}
+
+/// Prepares the specified window for painting.
+///
+/// On success: you get back both the [`HDC`] and [`PAINTSTRUCT`]
+/// that you'll need for future painting calls (including [`EndPaint`]).
+///
+/// [`BeginPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint)
+pub unsafe fn begin_paint(
+  hwnd: HWND,
+) -> Result<(HDC, PAINTSTRUCT), Win32Error> {
+  let mut ps = PAINTSTRUCT::default();
+  let hdc = BeginPaint(hwnd, &mut ps);
+  if hdc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok((hdc, ps))
+  }
+}
+
+/// See [`GetSysColor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor)
+pub enum SysColor {
+  _3dDarkShadow = 21,
+  _3dLight = 22,
+  ActiveBorder = 10,
+  ActiveCaption = 2,
+  AppWorkspace = 12,
+  /// Button face, also "3D face" color.
+  ButtonFace = 15,
+  /// Button highlight, also "3D highlight" color.
+  ButtonHighlight = 20,
+  /// Button shadow, also "3D shadow" color.
+  ButtonShadow = 16,
+  ButtonText = 18,
+  CaptionText = 9,
+  /// Desktop background color
+  Desktop = 1,
+  GradientActiveCaption = 27,
+  GradientInactiveCaption = 28,
+  GrayText = 17,
+  Highlight = 13,
+  HighlightText = 14,
+  HotLight = 26,
+  InactiveBorder = 11,
+  InactiveCaption = 3,
+  InactiveCaptionText = 19,
+  InfoBackground = 24,
+  InfoText = 23,
+  Menu = 4,
+  MenuHighlight = 29,
+  MenuBar = 30,
+  MenuText = 7,
+  ScrollBar = 0,
+  Window = 5,
+  WindowFrame = 6,
+  WindowText = 8,
+}
+
+/// Fills a rectangle with the given system color.
+///
+/// When filling the specified rectangle, this does **not** include the
+/// rectangle's right and bottom sides. GDI fills a rectangle up to, but not
+/// including, the right column and bottom row, regardless of the current
+/// mapping mode.
+///
+/// [`FillRect`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+pub unsafe fn fill_rect_with_sys_color(
+  hdc: HDC, rect: &RECT, color: SysColor,
+) -> Result<(), ()> {
+  if FillRect(hdc, rect, (color as u32 + 1) as HBRUSH) != 0 {
+    Ok(())
+  } else {
+    Err(())
+  }
+}
+
+/// See [`EndPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+pub unsafe fn end_paint(hwnd: HWND, ps: &PAINTSTRUCT) {
+  EndPaint(hwnd, ps);
+}
+
+/// Performs [`begin_paint`] / [`end_paint`] around your closure.
+pub unsafe fn do_some_painting<F, T>(hwnd: HWND, f: F) -> Result<T, Win32Error>
+where
+  F: FnOnce(HDC, bool, RECT) -> Result<T, Win32Error>,
+{
+  let (hdc, ps) = begin_paint(hwnd)?;
+  let output = f(hdc, ps.fErase != 0, ps.rcPaint);
+  end_paint(hwnd, &ps);
+  output
 }

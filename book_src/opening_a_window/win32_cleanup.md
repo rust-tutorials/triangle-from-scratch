@@ -849,12 +849,397 @@ so we know the message content is "real" content.
 However, if we put a safe version of `DispatchMessageW` into our library,
 that library code wouldn't actually be correct for all possible message inputs.
 
-## Wrapping Up
+## Get/Set Window Long Pointer
 
-Just about everything else in our `window_procedure` function needs to stay unsafe.
-It's almost all stuff that's taking HWND or HDC values,
-which we still haven't really made a system for ensuring that they're correct.
-We just have to trust ourselves to not do a bad thing.
+When we're using [SetWindowLongPtrW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw),
+and also the `Get` version,
+there's a lot of options going on.
+Also, we're also not checking the error values properly at the moment.
 
-That said, I think we've made some pretty good improvements in a few places,
-and several of these things are much nicer to use now.
+What's supposed to happen with the *setter* is that you set a value,
+and the return value is the previous value.
+If there's an error, then you get 0 back (and you call `GetLastError`).
+Except, if the previous value was 0, then you can't tell if things are wrong or not.
+So what you do is you first call [SetLastError](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror),
+which we haven't used yet,
+and you set the error code to 0.
+Then you do `SetWindowLongPtrW` and if you do get a 0,
+then you can check the error code.
+If the error code is still the 0 that you set it to,
+then actually you had a "successful" 0.
+The `GetWindowLongPtrW` behaves basically the same.
+
+For now, we'll *only* support getting/setting the userdata pointer.
+This simplifies the problem immensely.
+
+First we need to declare that we'll be using `SetLastError`
+```rust
+#[link(name = "Kernel32")]
+extern "system" {
+  /// [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
+  pub fn SetLastError(dwErrCode: DWORD);
+}
+```
+
+And we'll make this callable as a safe operation,
+```rust
+/// Sets the thread-local last-error code value.
+///
+/// See [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
+pub fn set_last_error(e: Win32Error) {
+  unsafe { SetLastError(e.0) }
+}
+```
+
+Now we can make an unsafe function for setting the userdata pointer:
+```rust
+/// Sets the "userdata" pointer of the window (`GWLP_USERDATA`).
+///
+/// **Returns:** The previous userdata pointer.
+///
+/// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
+pub unsafe fn set_window_userdata(
+  hwnd: HWND, ptr: *mut c_void,
+) -> Result<*mut c_void, Win32Error> {
+  set_last_error(Win32Error(0));
+  let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
+  if out == 0 {
+    // if output is 0, it's only a "real" error if the last_error is non-zero
+    let last_error = get_last_error();
+    if last_error.0 != 0 {
+      Err(last_error)
+    } else {
+      Ok(out as *mut c_void)
+    }
+  } else {
+    Ok(out as *mut c_void)
+  }
+}
+```
+
+And this lets us upgrade our window creation process a bit:
+```rust
+// in `window_procedure`
+    WM_NCCREATE => {
+      println!("NC Create");
+      let createstruct: *mut CREATESTRUCTW = lparam as *mut _;
+      if createstruct.is_null() {
+        return 0;
+      }
+      let boxed_i32_ptr = (*createstruct).lpCreateParams;
+      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
+    }
+```
+
+The getter for the userdata pointer is basically the same deal:
+```rust
+/// Gets the "userdata" pointer of the window (`GWLP_USERDATA`).
+///
+/// **Returns:** The userdata pointer.
+///
+/// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
+pub unsafe fn get_window_userdata(
+  hwnd: HWND,
+) -> Result<*mut c_void, Win32Error> {
+  set_last_error(Win32Error(0));
+  let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+  if out == 0 {
+    // if output is 0, it's only a "real" error if the last_error is non-zero
+    let last_error = get_last_error();
+    if last_error.0 != 0 {
+      Err(last_error)
+    } else {
+      Ok(out as *mut c_void)
+    }
+  } else {
+    Ok(out as *mut c_void)
+  }
+}
+```
+
+Now we can adjust how WM_DESTROY and WM_PAINT are handled.
+```rust
+// in `window_procedure`
+    WM_DESTROY => {
+      match get_window_userdata(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          Box::from_raw(ptr);
+          println!("Cleaned up the box.");
+        }
+        Ok(_) => {
+          println!("userdata ptr is null, no cleanup")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr to clean it up: {}", e)
+        }
+      }
+      PostQuitMessage(0);
+    }
+    WM_PAINT => {
+      match get_window_userdata(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          let ptr = ptr as *mut i32;
+          println!("Current ptr: {}", *ptr);
+          *ptr += 1;
+        }
+        Ok(_) => {
+          println!("userdata ptr is null")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr: {}", e)
+        }
+      }
+      let mut ps = PAINTSTRUCT::default();
+      let hdc = BeginPaint(hwnd, &mut ps);
+      let _success = FillRect(hdc, &ps.rcPaint, (COLOR_WINDOW + 1) as HBRUSH);
+      EndPaint(hwnd, &ps);
+    }
+```
+
+## PostQuitMessage
+
+This one is easy to make safe:
+you give it an exit code, and that exit code goes with the WM_QUIT message you get back later on.
+
+There's nothing that can go wrong, so we just wrap it.
+```rust
+/// Indicates to the system that a thread has made a request to terminate
+/// (quit).
+///
+/// The exit code becomes the `wparam` of the [`WM_QUIT`] message your message
+/// loop eventually gets.
+///
+/// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
+pub fn post_quit_message(exit_code: c_int) {
+  unsafe { PostQuitMessage(exit_code) }
+}
+```
+
+And then we just put that as the last line of the `WM_DESTROY` branch.
+
+## BeginPaint
+
+Our next target is [BeginPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint),
+which is another thing that's simple to make easier to use when you've got Rust types available.
+
+```rust
+/// Prepares the specified window for painting.
+///
+/// On success: you get back both the [`HDC`] and [`PAINTSTRUCT`]
+/// that you'll need for future painting calls (including [`EndPaint`]).
+///
+/// [`BeginPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint)
+pub unsafe fn begin_paint(
+  hwnd: HWND,
+) -> Result<(HDC, PAINTSTRUCT), Win32Error> {
+  let mut ps = PAINTSTRUCT::default();
+  let hdc = BeginPaint(hwnd, &mut ps);
+  if hdc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok((hdc, ps))
+  }
+}
+```
+
+## FillRect
+
+Using [FillRect](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+you can paint using an HBRUSH *or* a system color.
+
+We only want to support the system color path.
+First we make an enum for all the system colors.
+This is a little fiddly because some values are named more than once,
+and so we have to pick just a single canonical name for each value,
+but it's not too bad:
+```rust
+/// See [`GetSysColor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor)
+pub enum SysColor {
+  _3dDarkShadow = 21,
+  _3dLight = 22,
+  ActiveBorder = 10,
+  ActiveCaption = 2,
+  AppWorkspace = 12,
+  /// Button face, also "3D face" color.
+  ButtonFace = 15,
+  /// Button highlight, also "3D highlight" color.
+  ButtonHighlight = 20,
+  /// Button shadow, also "3D shadow" color.
+  ButtonShadow = 16,
+  ButtonText = 18,
+  CaptionText = 9,
+  /// Desktop background color
+  Desktop = 1,
+  GradientActiveCaption = 27,
+  GradientInactiveCaption = 28,
+  GrayText = 17,
+  Highlight = 13,
+  HighlightText = 14,
+  HotLight = 26,
+  InactiveBorder = 11,
+  InactiveCaption = 3,
+  InactiveCaptionText = 19,
+  InfoBackground = 24,
+  InfoText = 23,
+  Menu = 4,
+  MenuHighlight = 29,
+  MenuBar = 30,
+  MenuText = 7,
+  ScrollBar = 0,
+  Window = 5,
+  WindowFrame = 6,
+  WindowText = 8,
+}
+```
+
+and then we make a function to fill in with a system color:
+```rust
+/// Fills a rectangle with the given system color.
+///
+/// When filling the specified rectangle, this does **not** include the
+/// rectangle's right and bottom sides. GDI fills a rectangle up to, but not
+/// including, the right column and bottom row, regardless of the current
+/// mapping mode.
+///
+/// [`FillRect`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect)
+pub unsafe fn fill_rect_with_sys_color(
+  hdc: HDC, rect: &RECT, color: SysColor,
+) -> Result<(), ()> {
+  if FillRect(hdc, rect, (color as u32 + 1) as HBRUSH) != 0 {
+    Ok(())
+  } else {
+    Err(())
+  }
+}
+```
+
+## EndPaint
+
+You might think that [EndPaint](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+has some sort of error code we're ignoring.
+It returns a BOOL right?
+Actually when you check the docs, "The return value is always nonzero".
+In other words, the function might as well return nothing.
+
+```rust
+/// See [`EndPaint`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint)
+pub unsafe fn end_paint(hwnd: HWND, ps: &PAINTSTRUCT) {
+  EndPaint(hwnd, ps);
+}
+```
+Not a big gain in terms of API quality.
+However, this way the caller can at least see they're supposed to pass a real paint struct,
+and not possibly a null pointer.
+Also, now it's clear that there's no output value.
+We'll call it a small win.
+
+```rust
+// in `window_procedure`
+      match begin_paint(hwnd) {
+        Ok((hdc, ps)) => {
+          let _ = fill_rect_with_sys_color(hdc, &ps.rcPaint, SysColor::Window);
+          end_paint(hwnd, &ps);
+        }
+        Err(e) => {
+          println!("Couldn't begin painting: {}", e)
+        }
+      }
+```
+
+## A Painting Closure
+
+Is it easy to mess up the whole begin/end painting thing?
+Yeah, I could see that going wrong.
+One thing we might want to *try* is having a function that takes closure to do painting.
+
+The function signature for this is pretty gnarly,
+because *anything* with a closure is gnarly.
+
+The closure is going to get three details it needs to know from the `PAINTSTRUCT`:
+* The HDC.
+* If the background needs to be erased or not.
+* The target rectangle for painting.
+Everything else in the `PAINTSTRUCT` is just system reserved info that we don't even care about.
+
+Our library function will get the HWND and the closure.
+It starts the painting,
+runs the closure,
+and then ends the painting.
+Remember that we want the painting to be ended *regardless* of success/failure of the closure.
+```rust
+/// Performs [`begin_paint`] / [`end_paint`] around your closure.
+pub unsafe fn do_some_painting<F, T>(hwnd: HWND, f: F) -> Result<T, Win32Error>
+where
+  F: FnOnce(HDC, bool, RECT) -> Result<T, Win32Error>,
+{
+  let (hdc, ps) = begin_paint(hwnd)?;
+  let output = f(hdc, ps.fErase != 0, ps.rcPaint);
+  end_paint(hwnd, &ps);
+  output
+}
+```
+
+Neat!
+
+Note that, to write this, we needed to make `RECT` a `Copy` type.
+Most all the C structs we're declaring should be Debug, Clone, Copy, etc.
+We just didn't add all the impls at the time.
+
+What's it look like in practice?
+Not too bad at all:
+```rust
+// in `window_procedure`
+    WM_PAINT => {
+      match get_window_userdata(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          let ptr = ptr as *mut i32;
+          println!("Current ptr: {}", *ptr);
+          *ptr += 1;
+        }
+        Ok(_) => {
+          println!("userdata ptr is null")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr: {}", e)
+        }
+      }
+      do_some_painting(hwnd, |hdc, _erase_bg, target_rect| {
+        let _ = fill_rect_with_sys_color(hdc, &target_rect, SysColor::Window);
+        Ok(())
+      })
+      .unwrap_or_else(|e| println!("error during painting: {}", e));
+    }
+```
+
+What I like the most about this is that the user can still call `begin_paint` and `end_paint` on their own if they want.
+Because maybe we make some abstraction workflow thing that doesn't work for them,
+and they can just skip around our thing if that's the case.
+
+## Using The Exit Code
+
+One thing we don't do is pass along the `wParam` from the `MSG` struct when we see `WM_QUIT`.
+We're *supposed* to pass that as the exit code of our process.
+For this, we can use `std::process:exit`, and then pass the value, instead of just breaking the loop.
+
+```rust
+// in main
+  loop {
+    match get_any_message() {
+      Ok(msg) => {
+        if msg.message == WM_QUIT {
+          std::process::exit(msg.wParam as i32);
+        }
+        translate_message(&msg);
+        unsafe {
+          DispatchMessageW(&msg);
+        }
+      }
+      Err(e) => panic!("Error when getting from the message queue: {}", e),
+    }
+  }
+```
+
+## Done
+
+Is our program perfect?
+Naw, but I think it's good enough for now.
