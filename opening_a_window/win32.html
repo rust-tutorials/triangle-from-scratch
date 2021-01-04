@@ -1164,6 +1164,26 @@ extern &quot;system&quot; {
 }
 <span class="boring">}
 </span></code></pre></pre>
+<p>Okay so then we put those into our <code>loop</code>, if there's no problem with getting the message:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  loop {
+    let message_return = unsafe { GetMessageW(&amp;mut msg, null_mut(), 0, 0) };
+    if message_return == 0 {
+      break;
+    } else if message_return == -1 {
+      let last_error = unsafe { GetLastError() };
+      panic!(&quot;Error with `GetMessageW`, error code: {}&quot;, last_error);
+    } else {
+      unsafe {
+        TranslateMessage(&amp;msg);
+        DispatchMessageW(&amp;msg);
+      }
+    }
+  }
+<span class="boring">}
+</span></code></pre></pre>
 <p>There's a lot of good info on the page about window messages,
 but that's all we have to do here in terms of our code.</p>
 <p>By now, our program can open a window.
@@ -1178,13 +1198,18 @@ Usually it just ignores every event.
 However, a few event types can't just be ignored.
 One of them is that window closing situation.
 Another is that thing with the mouse cursor.</p>
-<p>If we look at MSDN page for the <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-close">WM_CLOSE</a>
+<p>First let's do the window closing and cleanup.
+If we look at MSDN page for the <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-close">WM_CLOSE</a>
 message, we can see that we'll need to be able to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow">DestroyWindow</a>
-and <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage">PostQuitMessage</a>.</p>
+and <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage">PostQuitMessage</a>.
+We also need to respond to <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-destroy">WM_DESTROY</a> as well.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>#[link(name = &quot;User32&quot;)]
+</span>pub const WM_CLOSE: u32 = 0x0010;
+pub const WM_DESTROY: u32 = 0x0002;
+
+#[link(name = &quot;User32&quot;)]
 extern &quot;system&quot; {
   /// [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
   pub fn DestroyWindow(hWnd: HWND) -&gt; BOOL;
