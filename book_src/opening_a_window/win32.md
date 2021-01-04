@@ -1080,6 +1080,24 @@ extern "system" {
 }
 ```
 
+Okay so then we put those into our `loop`, if there's no problem with getting the message:
+```rust
+  loop {
+    let message_return = unsafe { GetMessageW(&mut msg, null_mut(), 0, 0) };
+    if message_return == 0 {
+      break;
+    } else if message_return == -1 {
+      let last_error = unsafe { GetLastError() };
+      panic!("Error with `GetMessageW`, error code: {}", last_error);
+    } else {
+      unsafe {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+  }
+```
+
 There's a lot of good info on the page about window messages,
 but that's all we have to do here in terms of our code.
 
@@ -1099,11 +1117,16 @@ However, a few event types can't just be ignored.
 One of them is that window closing situation.
 Another is that thing with the mouse cursor.
 
+First let's do the window closing and cleanup.
 If we look at MSDN page for the [WM_CLOSE](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-close)
 message, we can see that we'll need to be able to use [DestroyWindow](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
 and [PostQuitMessage](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage).
+We also need to respond to [WM_DESTROY](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-destroy) as well.
 
 ```rust
+pub const WM_CLOSE: u32 = 0x0010;
+pub const WM_DESTROY: u32 = 0x0002;
+
 #[link(name = "User32")]
 extern "system" {
   /// [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
