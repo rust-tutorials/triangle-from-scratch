@@ -5,7 +5,7 @@
 
 Rust literals are textual content encoded as UTF-8.
 
-Sometimes we our textual content in other encodings instead.
+Sometimes we want our textual content in other encodings instead.
 
 This can be done at runtime,
 but why do at runtime what you could be doing at compile time?
