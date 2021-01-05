@@ -2,8 +2,8 @@
 
 /// Removes a code point from the head of a utf-8 byte slice.
 ///
-/// If the input is not valid utf-8 you'll get an improper output, but there's
-/// no memory safety concern.
+/// If the input isn't utf-8 bytes it will attempt to use the unicode
+/// replacement character as appropriate.
 ///
 /// Unfortunately, because of Rust's current `const fn` limitations, this
 /// function cannot accept and return `&str` values directly.
@@ -36,7 +36,12 @@ pub const fn break_off_code_point(utf8: &[u8]) -> Option<(u32, &[u8])> {
       let out = lead << 18 | trail1 << 12 | trail2 << 6 | trail3;
       Some((out, rest))
     }
-    [..] => None, /* default */
+    [] => None,
+    [_unknown, rest @ ..] => {
+      // If we can't match anything above, we just pull off one byte and give
+      // the unicode replacement code point.
+      Some(('�' as u32, rest))
+    }
   }
 }
 
@@ -50,9 +55,6 @@ fn test_break_off_code_point() {
 
   // empty string works properly
   assert!(break_off_code_point("".as_bytes()).is_none());
-
-  // invalid inputs will go to `None`
-  assert!(break_off_code_point(&[0xFF]).is_none());
 }
 
 /// Counts the number of code units that the input would require in UTF-16.

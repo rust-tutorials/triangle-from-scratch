@@ -233,13 +233,40 @@ fn test_break_off_code_point() {
 
   // empty string works properly
   assert!(break_off_code_point("".as_bytes()).is_none());
-  
-  // invalid inputs will go to `None`
-  assert!(break_off_code_point(&[0xFF]).is_none());
 }
 ```
 A passing test doesn't conclusively prove that our function works,
 but it at least shows that the function does what we expect (as far as we tested).
+
+### Invalid Input
+
+One thing we *don't* handle quite right is invalid input.
+Right now, our input is assumed to be correct.
+If the input doesn't match a case we expect, then we just give back `None`.
+If we're expecting to only process string literals with this, that's fine.
+However, we might want to process *any* input at some point,
+so let's do a little tweak to allow for lossy conversion of bad inputs.
+
+All we have to do is break up the final `[..] => None` case into two cases.
+* An empty string goes to `None`
+* Our new "default" case gives the [Unicode Replacement Character](https://en.wikipedia.org/wiki/Specials_(Unicode_block)#Replacement_character)
+  as the code point and consumes 1 byte if the current leading character is disallowed.
+
+```rust
+// in the `break_off_code_point` match
+    [] => None,
+    [_unknown, rest @ ..] => {
+      // If we can't match anything above, we just pull off one byte and give
+      // the unicode replacement code point.
+      Some(('�' as u32, rest))
+    }
+```
+
+This allows us to handle garbage in the middle of the input a little better.
+
+It's still not perfectly conformant,
+because we've decided to skip on checking the trailing bytes for validity,
+but it's good enough in most cases that we'll make that trade.
 
 ## `count_utf16_code_units`
 
