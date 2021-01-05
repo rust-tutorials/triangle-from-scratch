@@ -881,7 +881,7 @@ extern "system" {
 > To show the window—that is, make the window visible —pass the window handle to the
 > [ShowWindow](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow) function
 
-Hey, look, the MSDN docs are using some of that extended typography we mentioned before.
+Hey, look, the MSDN docs are using some of that extended typography we mentioned before (those dashes).
 
 Apparently we want our window creation to look something like this:
 ```rust
@@ -905,6 +905,9 @@ fn main() {
       core::ptr::null_mut(),
     )
   };
+  if hwnd.is_null() {
+    panic!("Failed to create a window.");
+  }
 }
 ```
 
@@ -936,9 +939,9 @@ use core::ptr::{null, null_mut};
 ```
 
 For calling `ShowWindow`, we have a `HWND` already,
-but the show parameter is apparently another one of those WinMain arguments.
+but the show parameter is apparently another one of those `WinMain` arguments.
 Instead we'll just look at the list of what the [ShowWindow](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow)
-docs say, and I guess we can pick `SW_SHOW`.
+docs say we can send, and I guess we can pick `SW_SHOW`.
 
 ```rust
 const SW_SHOW: c_int = 5;
@@ -950,8 +953,17 @@ extern "system" {
 }
 ```
 
-Okay, now we can at least make the window and the program will close.
-We expect it to like, flicker on screen really fast and then disappear, or something.
+And we add a call to `ShowWindow` after we've made our window and checked for a successful creation.
+```rust
+  let _previously_visible = unsafe { ShowWindow(hwnd, SW_SHOW) };
+```
+
+Okay, if we run our program now we *expect* it to at least make the window,
+but then the window will close when we go off the end of the `main` function and the process ends.
+So, it'll probably flicker on screen really fast and then disappear, or something.
+Right?
+
+Let's give it a try...
 ```
 D:\dev\triangle-from-scratch>cargo run
    Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
