@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="appendix/index.html"><strong aria-hidden="true">2.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="appendix/utf16_literals.html"><strong aria-hidden="true">2.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -3103,6 +3103,491 @@ For this, we can use <code>std::process:exit</code>, and then pass the value, in
 <h2><a class="header" href="#done" id="done">Done</a></h2>
 <p>Is our program perfect?
 Naw, but I think it's good enough for now.</p>
+<h1><a class="header" href="#appendix" id="appendix">Appendix</a></h1>
+<p>This part of the book has articles on stuff that's even more of a
+<a href="https://en.wiktionary.org/wiki/yak_shaving">yak shave</a> than normal.</p>
+<p>It's useful, but it's just a diversion from our main focus.</p>
+<p>(Note: Thanks to <a href="https://github.com/Plecra">Plecra</a> for helping with the code for this article.)</p>
+<h1><a class="header" href="#utf-16-literals" id="utf-16-literals">UTF-16 Literals</a></h1>
+<p>Rust literals are textual content encoded as UTF-8.</p>
+<p>Sometimes we want our textual content in other encodings instead.</p>
+<p>This can be done at runtime,
+but why do at runtime what you could be doing at compile time?</p>
+<h2><a class="header" href="#what-is-unicode" id="what-is-unicode">What is Unicode?</a></h2>
+<p>Unicode is a huge pile of nonsense, that's what it is.</p>
+<p>There's an old article from 2003 called
+<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!)</a>,
+and the title of that article is correct.</p>
+<p>You should stop and read it if you haven't,
+and from here on I'm going to assume you've read it.</p>
+<h2><a class="header" href="#const-fn" id="const-fn"><code>const fn</code></a></h2>
+<p>In Rust, if you want to do something at compile time you must use a <code>const fn</code>.
+However, Rust <code>const fn</code> is only <em>partly</em> implemented within the language.
+There is much that is not yet done,
+and most importantly <code>const fn</code> doesn't support traits.</p>
+<p>Not having trait support means that we have to do things a little weird.
+For one, we can't use normal iterators.
+Another, we can't use string slice indexing.</p>
+<p>So we'll have to write some <code>const fn</code> stuff without using traits.</p>
+<h2><a class="header" href="#break_off_code_point" id="break_off_code_point"><code>break_off_code_point</code></a></h2>
+<p>First, we want a <code>const fn</code> way to break a code point off the front of a utf-8 byte slice.
+Normally, we'd use <a href="https://doc.rust-lang.org/std/primitive.str.html#method.chars">str::chars</a>,
+but remember that there's no iterators here.
+We'll have to just do it ourselves.</p>
+<p>It's not too difficult.
+We just follow the spec, as described on the <a href="https://en.wikipedia.org/wiki/UTF-8#Encoding">the wikipedia for utf-8</a>.</p>
+<p>First we need a function that will take in some utf8 bytes,
+break off one code point worth of bytes,
+and then return what code point it found and the rest of the bytes.
+All of this might fail (such as if the input is an empty slice), so the output is an <code>Option</code></p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  None
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>As I mentioned above, we can't sub-slice a <code>&amp;str</code> value in a const context in current rust,
+so we'll have to deal directly in <code>&amp;[u8]</code> for now.</p>
+<h3><a class="header" href="#determine-the-next-code-points-byte-count" id="determine-the-next-code-points-byte-count">Determine the next code point's byte count</a></h3>
+<p>The first thing we do is decide how many bytes we're going to use from the input.</p>
+<p>As a &quot;default&quot; case, if we can't find a code point in the input we'll give none.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [..] =&gt; None
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>To determine how many bytes we'll use up to get our code point we look at the bits of the leading byte.
+For any multi-byte sequence the number of initial 1 bits is the number of <em>total</em> bytes in the sequence.</p>
+<ul>
+<li>If the initial bit is 0, then that's a one byte sequence.</li>
+<li>If the initial bits are 110, then that's a two byte sequence.</li>
+<li>If the initial bits are 1110, then that's a three byte sequence.</li>
+<li>If the initial bits are 11110, then that's a four byte sequence.</li>
+</ul>
+<p>We can look at the initial byte and see what case we're in using a
+<a href="https://doc.rust-lang.org/reference/patterns.html#slice-patterns">slice pattern</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [0b00000000..=0b01111111, ..] =&gt; None, /* one */
+    [0b11000000..=0b11011111, ..] =&gt; None, /* two */
+    [0b11100000..=0b11101111, ..] =&gt; None, /* three */
+    [0b11110000..=0b11110111, ..] =&gt; None, /* four */
+    [..] =&gt; None,                          /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Except that after checking the bit pattern we need to store that byte,
+because we'll need it to determine the output.
+Also we'll need to use the &quot;rest of the bytes&quot; too.
+For this we can add an <a href="https://doc.rust-lang.org/reference/patterns.html#identifier-patterns">identifier pattern</a>
+to the matching segments.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [a @ 0b00000000..=0b01111111, rest @ ..] =&gt; None, /* one */
+    [a @ 0b11000000..=0b11011111, rest @ ..] =&gt; None, /* two */
+    [a @ 0b11100000..=0b11101111, rest @ ..] =&gt; None, /* three */
+    [a @ 0b11110000..=0b11110111, rest @ ..] =&gt; None, /* four */
+    [..] =&gt; None,                                     /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Slice patterns and identifier patterns are not very common in Rust,
+so if you're unfamiliar with them please go glance at the reference.</p>
+<p>Okay, next adjustment is that the two, three, and four cases aren't actually pulling the right number of bytes off the slice.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [a @ 0b00000000..=0b01111111, rest @ ..] =&gt; None, /* one */
+    [a @ 0b11000000..=0b11011111, b, rest @ ..] =&gt; None, /* two */
+    [a @ 0b11100000..=0b11101111, b, c, rest @ ..] =&gt; None, /* three */
+    [a @ 0b11110000..=0b11110111, b, c, d, rest @ ..] =&gt; None, /* four */
+    [..] =&gt; None,                                     /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>What's up with those comments? That's really how rustfmt puts it. Whatever.</p>
+<p>Also note that <em>technically</em> the trailing bytes have their own limits on what's valid and what's not.
+We're going to take a page from Rust's book and ignore that.
+We'll simply <em>assume</em> that the trailing bytes in a multi-byte sequence are valid.
+If a caller gives us bad input, we might give them bad output back.
+There's not an actual safety concern with it, so it's not a big deal.</p>
+<h3><a class="header" href="#compute-the-output-code-point" id="compute-the-output-code-point">Compute the output code point</a></h3>
+<p>So now we need to fill in the output side of the four cases.</p>
+<p>The one byte case is simple.
+We just return the value directly.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [a @ 0b00000000..=0b01111111, rest @ ..] =&gt; {
+      // one byte
+      Some((*a as u32, rest))
+    }
+    [a @ 0b11000000..=0b11011111, b, rest @ ..] =&gt; None, /* two */
+    [a @ 0b11100000..=0b11101111, b, c, rest @ ..] =&gt; None, /* three */
+    [a @ 0b11110000..=0b11110111, b, c, d, rest @ ..] =&gt; None, /* four */
+    [..] =&gt; None,                                        /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The two byte case is where we start having to combine bits across different bytes.
+From the leading byte we take the lowest 5 bits,
+and from the trailing byte we take the lowest 6 bits.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [a @ 0b00000000..=0b01111111, rest @ ..] =&gt; {
+      // one byte
+      Some((*a as u32, rest))
+    }
+    [a @ 0b11000000..=0b11011111, b, rest @ ..] =&gt; {
+      // two bytes
+      let lead = (*a &amp; 0b11111) as u32;
+      let trail = (*b &amp; 0b111111) as u32;
+      Some((lead &lt;&lt; 6 | trail, rest))
+    }
+    [a @ 0b11100000..=0b11101111, b, c, rest @ ..] =&gt; None, /* three */
+    [a @ 0b11110000..=0b11110111, b, c, d, rest @ ..] =&gt; None, /* four */
+    [..] =&gt; None,                                           /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The three and four byte cases are the same idea as the two byte case.
+The number of bits to use from the leading byte changes each time,
+but the number of bits to use from trailing bytes stays the same.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn break_off_code_point(utf8: &amp;[u8]) -&gt; Option&lt;(u32, &amp;[u8])&gt; {
+  match utf8 {
+    [a @ 0b00000000..=0b01111111, rest @ ..] =&gt; {
+      // one byte
+      Some((*a as u32, rest))
+    }
+    [a @ 0b11000000..=0b11011111, b, rest @ ..] =&gt; {
+      // two bytes
+      let lead = (*a &amp; 0b11111) as u32;
+      let trail = (*b &amp; 0b111111) as u32;
+      Some((lead &lt;&lt; 6 | trail, rest))
+    }
+    [a @ 0b11100000..=0b11101111, b, c, rest @ ..] =&gt; {
+      // three bytes
+      let lead = (*a &amp; 0b1111) as u32;
+      let trail1 = (*b &amp; 0b111111) as u32;
+      let trail2 = (*c &amp; 0b111111) as u32;
+      let out = lead &lt;&lt; 12 | trail1 &lt;&lt; 6 | trail2;
+      Some((out, rest))
+    }
+    [a @ 0b11110000..=0b11110111, b, c, d, rest @ ..] =&gt; {
+      // four bytes
+      let lead = (*a &amp; 0b111) as u32;
+      let trail1 = (*b &amp; 0b111111) as u32;
+      let trail2 = (*c &amp; 0b111111) as u32;
+      let trail3 = (*d &amp; 0b111111) as u32;
+      let out = lead &lt;&lt; 18 | trail1 &lt;&lt; 12 | trail2 &lt;&lt; 6 | trail3;
+      Some((out, rest))
+    }
+    [..] =&gt; None, /* default */
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We can also write a small unit test for this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_break_off_code_point() {
+  // code points of 1, 2, 3, and 4 byte size
+  for ch in &amp;['$', '¢', 'ह', '€', '한', '𐍈'] {
+    let s = format!(&quot;{}&quot;, ch);
+    assert_eq!(break_off_code_point(s.as_bytes()), Some((*ch as u32, &amp;[][..])));
+  }
+
+  // empty string works properly
+  assert!(break_off_code_point(&quot;&quot;.as_bytes()).is_none());
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>A passing test doesn't conclusively prove that our function works,
+but it at least shows that the function does what we expect (as far as we tested).</p>
+<h3><a class="header" href="#invalid-input" id="invalid-input">Invalid Input</a></h3>
+<p>One thing we <em>don't</em> handle quite right is invalid input.
+Right now, our input is assumed to be correct.
+If the input doesn't match a case we expect, then we just give back <code>None</code>.
+If we're expecting to only process string literals with this, that's fine.
+However, we might want to process <em>any</em> input at some point,
+so let's do a little tweak to allow for lossy conversion of bad inputs.</p>
+<p>All we have to do is break up the final <code>[..] =&gt; None</code> case into two cases.</p>
+<ul>
+<li>An empty string goes to <code>None</code></li>
+<li>Our new &quot;default&quot; case gives the <a href="https://en.wikipedia.org/wiki/Specials_(Unicode_block)#Replacement_character">Unicode Replacement Character</a>
+as the code point and consumes 1 byte if the current leading character is disallowed.</li>
+</ul>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in the `break_off_code_point` match
+    [] =&gt; None,
+    [_unknown, rest @ ..] =&gt; {
+      // If we can't match anything above, we just pull off one byte and give
+      // the unicode replacement code point.
+      Some(('�' as u32, rest))
+    }
+<span class="boring">}
+</span></code></pre></pre>
+<p>This allows us to handle garbage in the middle of the input a little better.</p>
+<p>It's still not perfectly conformant,
+because we've decided to skip on checking the trailing bytes for validity,
+but it's good enough in most cases that we'll make that trade.</p>
+<h2><a class="header" href="#count_utf16_code_units" id="count_utf16_code_units"><code>count_utf16_code_units</code></a></h2>
+<p>Alright, so our goal was to re-encode utf-8 as utf-16.
+Now that we can iterate the code points of a utf-8 sequence,
+how are we going to build a utf-16 sequence?</p>
+<p>First, we need to get an output buffer. To put our output.
+Since this is all in a const context, our output buffer is going to be an array.
+How big of an array do we need?
+Glad you asked.</p>
+<p>Let's make another function for this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn count_utf16_code_units(s: &amp;str) -&gt; usize {
+  0
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Off to a good start.</p>
+<p>So we're going to walk the input string,
+and then for each code <em>point</em> we determine if it needs 1 or 2 code <em>units</em> to be stored.
+This will give us the capacity for how many <code>u16</code> values our array will need to be.</p>
+<p>The rule to count code units in utf-16 is simple:
+If the unicode code point value is less than or equal to 0xFFFF then it's 1 code unit in utf-16,
+otherwise it's 2 code units in utf-16.</p>
+<p>We can write this with a simply <code>while let</code> loop,
+and we'll throw a unit test at it too.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub const fn count_utf16_code_units(s: &amp;str) -&gt; usize {
+  let mut bytes = s.as_bytes();
+  let mut len = 0;
+  while let Some((u, rest)) = break_off_code_point(bytes) {
+    len += if u &lt;= 0xFFFF { 1 } else { 2 };
+    bytes = rest;
+  }
+  len
+}
+
+#[test]
+fn test_count_utf16_code_units() {
+  let s = &quot;hello from the unit test&quot;;
+  let normal_style: usize = s.chars().map(|ch| ch.len_utf16()).sum();
+  assert_eq!(normal_style, count_utf16_code_units(s));
+
+  let s = &quot;$¢ह€한𐍈, 漢字, ひらがな / 平仮名, カタカナ / 片仮名&quot;;
+  let normal_style: usize = s.chars().map(|ch| ch.len_utf16()).sum();
+  assert_eq!(normal_style, count_utf16_code_units(s));
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Cool, so now we can const count the number of code units we'll need to have.</p>
+<h2><a class="header" href="#making-a-macro" id="making-a-macro">Making A Macro</a></h2>
+<p>Okay, so now we want to input a string literal to something and get out a utf-16 literal.</p>
+<p>Sadly, we can't do this with a const fn.
+The output type would depend on the input value.
+Rust doesn't like that idea at all.</p>
+<p>Instead, we'll write a macro.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[macro_export]
+macro_rules! utf16 {
+  // pass
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Our macro has one match case it can do: you give it an expression and it'll process the text.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[macro_export]
+macro_rules! utf16 {
+  ($text:expr) =&gt; {{
+    todo!()
+  }};
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So when we get this <code>$text</code> value we want to assign it to a local const with a weird name.
+This helps avoid some const-eval issues you can <em>potentially</em> get like if
+the macro's caller has got an identifier in scope next to their macro usage that clashes with an identifier we're about to make in our macro.
+It sounds unlikely, but it did come up in real code when developing the crate that this article is based on.
+It doesn't really hurt, and it prevents a very cryptic error message from hitting the macro's user, so we'll do it.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[macro_export]
+macro_rules! utf16 {
+  ($text:expr) =&gt; {{
+    // Here we pick a name highly unlikely to exist in the scope
+    // that $text came from, which prevents a potential const eval cycle error.
+    const __A1B2C3D4_CONST_EVAL_LOOP_BREAK: &amp;str = $text;
+    const UTF8: &amp;str = __A1B2C3D4_CONST_EVAL_LOOP_BREAK;
+    todo!()
+  }};
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Next we'll make a const for the size of the output buffer.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[macro_export]
+macro_rules! utf16 {
+  ($text:expr) =&gt; {{
+    // Here we pick a name highly unlikely to exist in the scope
+    // that $text came from, which prevents a potential const eval cycle error.
+    const __A1B2C3D4_CONST_EVAL_LOOP_BREAK: &amp;str = $text;
+    const UTF8: &amp;str = __A1B2C3D4_CONST_EVAL_LOOP_BREAK;
+    const OUT_BUFFER_LEN: usize = $crate::util::count_utf16_code_units(UTF8);
+    todo!()
+  }};
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now we make a const for the output itself.
+It's an array with a length equal to <code>OUT_BUFFER_LEN</code>,
+but we need to mutate and fill it all in as we iterate the code points of the input,
+so we'll compute it using an inner block.</p>
+<p>We start with a zeroed buffer of the right size,
+then we walk the input and write in each value.
+Because the normal encoding utilities in the core library aren't <code>const fn</code>,
+we have to do our own encoding math right here.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// ...
+    const UTF16: [u16; OUT_BUFFER_LEN] = {
+      let mut buffer = [0u16; OUT_BUFFER_LEN];
+      let mut bytes = UTF8.as_bytes();
+      let mut i = 0;
+      while let Some((u, rest)) = $crate::util::break_off_code_point(bytes) {
+        if u &lt;= 0xFFFF {
+          buffer[i] = u as u16;
+          i += 1;
+        } else {
+          let code = u - 0x1_0000;
+          buffer[i] = 0xD800 | ((code &gt;&gt; 10) as u16);
+          buffer[i + 1] = 0xDC00 | ((code &amp; 0x3FF) as u16);
+          i += 2;
+        }
+        bytes = rest;
+      }
+      buffer
+    };
+// ...
+<span class="boring">}
+</span></code></pre></pre>
+<p>Finally, we just return the whole array.
+In an initial version of this I had the output be just the data slice (<code>&amp;[u16]</code>),
+but in some select situations you do need the data in an owned form,
+so the macro was adjusted to return the array directly.
+If you want it to be a slice, just prefix the call with <code>&amp;</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[macro_export]
+macro_rules! utf16 {
+  ($text:expr) =&gt; {{
+    // Here we pick a name highly unlikely to exist in the scope
+    // that $text came from, which prevents a potential const eval cycle error.
+    const __A1B2C3D4_CONST_EVAL_LOOP_BREAK: &amp;str = $text;
+    const UTF8: &amp;str = __A1B2C3D4_CONST_EVAL_LOOP_BREAK;
+    const OUT_BUFFER_LEN: usize = $crate::util::count_utf16_code_units(UTF8);
+    const UTF16: [u16; OUT_BUFFER_LEN] = {
+      let mut buffer = [0u16; OUT_BUFFER_LEN];
+      let mut bytes = UTF8.as_bytes();
+      let mut i = 0;
+      while let Some((u, rest)) = $crate::util::break_off_code_point(bytes) {
+        if u &lt;= 0xFFFF {
+          buffer[i] = u as u16;
+          i += 1;
+        } else {
+          let code = u - 0x1_0000;
+          buffer[i] = 0xD800 | ((code &gt;&gt; 10) as u16);
+          buffer[i + 1] = 0xDC00 | ((code &amp; 0x3FF) as u16);
+          i += 2;
+        }
+        bytes = rest;
+      }
+      buffer
+    };
+    UTF16
+  }};
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And some handy tests wouldn't be out of place:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_utf16() {
+  const HELLO16: [u16; 5] = utf16!(&quot;hello&quot;);
+  assert_eq!(&amp;HELLO16[..], &amp;&quot;hello&quot;.encode_utf16().collect::&lt;Vec&lt;u16&gt;&gt;());
+
+  const WORDS8: &amp;str = &quot;$¢ह€한𐍈, 漢字, ひらがな / 平仮名, カタカナ / 片仮名&quot;;
+  const WORDS16: &amp;[u16] = &amp;utf16!(WORDS8);
+  assert_eq!(WORDS16, &amp;WORDS8.encode_utf16().collect::&lt;Vec&lt;u16&gt;&gt;());
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ah, but often we want to have a <em>null terminated</em> string of utf-16.
+That's also no trouble at all:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// As per [`utf16`], but places a null-terminator on the end.
+#[macro_export]
+macro_rules! utf16_null {
+  ($text:expr) =&gt; {{
+    const TEXT_NULL___A1B2C3D4: &amp;str = concat!($text, '\0');
+    $crate::utf16!(TEXT_NULL___A1B2C3D4)
+  }};
+}
+
+#[test]
+fn test_utf16_null() {
+  const HELLO: &amp;[u16] = &amp;utf16_null!(&quot;hello&quot;);
+  assert_eq!(HELLO, &amp;&quot;hello\0&quot;.encode_utf16().collect::&lt;Vec&lt;u16&gt;&gt;());
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>All very good, I hope you had fun with this one.</p>
 
                     </main>
 
