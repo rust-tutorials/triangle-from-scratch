@@ -1702,3 +1702,46 @@ Well now our cursor works just fine!
 
 The day is saved!
 
+## windows_subsystem
+
+A last note before we go.
+The Windows operating system has two "subsystems" that a program can target: "console" and "windows".
+The only difference to us Rust folks is if the program gets a console allocated for it automatically by the system.
+* A console subsystem program gets a console allocated for it.
+  If you run it from an existing console it'll use that one,
+  but if you run it via other means it'll open a new console of its own while it's running.
+* A windows subsystem program does *not* get a console allocated for it.
+
+If you try to use standard output or standard error, such as with `println!` and `eprintln!`,
+and there's no currently allocated console,
+then the output goes nowhere.
+
+By default, a Rust program is a console subsystem program.
+This is fine, because it means that we can print debug messages.
+However, it also means that if we give our program to a friend and they run it,
+maybe by double clicking the executable in windows explorer,
+then they'll see the window that we want open up *and also* they'll see a mysterious console open in the background.
+If you really really mean for end users to see that console appear then that's fine,
+but most people don't expect an extra console to appear when the run a Windows program.
+It feels a little janky for this debug thing to show up along side the "real" program's window.
+
+This is easy enough to fix.
+If we use the [windows_subsystem](https://doc.rust-lang.org/stable/reference/runtime.html#the-windows_subsystem-attribute)
+attribute on our program we can pick the subsystem we want the program to use.
+
+```rust
+// at the top of the file
+#![windows_subsystem = "windows"]
+```
+
+However, if we use that attribute directly then *even debugging builds* don't get a console.
+
+Instead, I like to use [cfg_attr](https://doc.rust-lang.org/stable/reference/conditional-compilation.html?highlight=cfg_attr#the-cfg_attr-attribute)
+to set the `windows_subsystem` value any time we're *not* using debug assertions.
+That's not exactly the same as "whenever it's a release build", but close enough.
+
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+```
+
+And now we can send a release build of the program to our friends and have it act like they expect a normal Win32 program to act.
