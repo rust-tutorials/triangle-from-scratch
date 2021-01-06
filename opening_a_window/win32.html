@@ -1793,6 +1793,48 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
 </span></code></pre></pre>
 <p>Well now our cursor works just fine!</p>
 <p>The day is saved!</p>
+<h2><a class="header" href="#windows_subsystem" id="windows_subsystem">windows_subsystem</a></h2>
+<p>A last note before we go.
+The Windows operating system has two &quot;subsystems&quot; that a program can target: &quot;console&quot; and &quot;windows&quot;.
+The only difference to us Rust folks is if the program gets a console allocated for it automatically by the system.</p>
+<ul>
+<li>A console subsystem program gets a console allocated for it.
+If you run it from an existing console it'll use that one,
+but if you run it via other means it'll open a new console of its own while it's running.</li>
+<li>A windows subsystem program does <em>not</em> get a console allocated for it.</li>
+</ul>
+<p>If you try to use standard output or standard error, such as with <code>println!</code> and <code>eprintln!</code>,
+and there's no currently allocated console,
+then the output goes nowhere.</p>
+<p>By default, a Rust program is a console subsystem program.
+This is fine, because it means that we can print debug messages.
+However, it also means that if we give our program to a friend and they run it,
+maybe by double clicking the executable in windows explorer,
+then they'll see the window that we want open up <em>and also</em> they'll see a mysterious console open in the background.
+If you really really mean for end users to see that console appear then that's fine,
+but most people don't expect an extra console to appear when the run a Windows program.
+It feels a little janky for this debug thing to show up along side the &quot;real&quot; program's window.</p>
+<p>This is easy enough to fix.
+If we use the <a href="https://doc.rust-lang.org/stable/reference/runtime.html#the-windows_subsystem-attribute">windows_subsystem</a>
+attribute on our program we can pick the subsystem we want the program to use.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// at the top of the file
+#![windows_subsystem = &quot;windows&quot;]
+<span class="boring">}
+</span></code></pre></pre>
+<p>However, if we use that attribute directly then <em>even debugging builds</em> don't get a console.</p>
+<p>Instead, I like to use <a href="https://doc.rust-lang.org/stable/reference/conditional-compilation.html?highlight=cfg_attr#the-cfg_attr-attribute">cfg_attr</a>
+to set the <code>windows_subsystem</code> value any time we're <em>not</em> using debug assertions.
+That's not exactly the same as &quot;whenever it's a release build&quot;, but close enough.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span>#![cfg_attr(not(debug_assertions), windows_subsystem = &quot;windows&quot;)]
+<span class="boring">fn main() {
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>And now we can send a release build of the program to our friends and have it act like they expect a normal Win32 program to act.</p>
 
                     </main>
 
