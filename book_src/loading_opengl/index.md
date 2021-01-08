@@ -14,7 +14,7 @@ The general idea is that we need to do two things:
   Also, a context is associated with a particular window's drawing area.
   Usually you have just one window,
   and so you have only one GL context,
-  and so you don't need to worry too much.
+  meaning that don't need to worry about any of that.
   If you're trying to use GL with more than one window at a time,
   things can get tricky.
 2) Load the GL function pointers.
