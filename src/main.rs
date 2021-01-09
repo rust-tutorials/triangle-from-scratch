@@ -7,12 +7,23 @@ fn main() {
   let sample_window_class_wn = wide_null(sample_window_class);
 
   let mut wc = WNDCLASSW::default();
+  wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
   wc.lpfnWndProc = Some(window_procedure);
   wc.hInstance = get_process_handle();
   wc.lpszClassName = sample_window_class_wn.as_ptr();
   wc.hCursor = load_predefined_cursor(IDCursor::Arrow).unwrap();
 
   let _atom = unsafe { register_class(&wc) }.unwrap();
+
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
 
   let lparam: *mut i32 = Box::leak(Box::new(5_i32));
   let hwnd = unsafe {
