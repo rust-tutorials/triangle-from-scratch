@@ -401,8 +401,297 @@ Alright so we're gonna set up a `PIXELFORMATDESCRIPTOR` and choose a pixel forma
 AGH! With no HDC from anywhere we can't choose a pixel format!
 Blast, and such.
 
-Alright so we'll move this *after* we create our window, before we show it.
+### We Need An HDC
+
+Alright since we need an HDC to choose a pixel format,
+we'll move the choosing *after* we create our window,
+before we show it,
+and then we can get the DC for our window,
+and it'll all be fine.
 
 We'll need to use [GetDC](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
 to get the HDC value for our window,
-and then [ReleaseDC](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+and then eventually [ReleaseDC](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+at some point.
+
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+  pub fn GetDC(hWnd: HWND) -> HDC;
+
+  /// [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+  pub fn ReleaseDC(hWnd: HWND, hDC: HDC) -> c_int;
+}
+```
+
+Okay, now we're ready.
+So we're going to get the DC for our window,
+choose a pixel format,
+we'll set that pixel format (see next section),
+and then we're all good, right?
+
+No.
+
+Again, of course, this has to be more complicated than that.
+
+If we glance back at [the wiki](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL))
+we'll see a section called "Proper Context Creation" with the following warning:
+
+> **Warning:** Unfortunately, Windows does not allow the user to change the pixel format of a window.
+> You get to set it exactly once.
+> Therefore, if you want to use a different pixel format from the one your fake context used (for sRGB or multisample framebuffers, or just different bit-depths of buffers),
+> you must destroy the window entirely and recreate it after we are finished with the dummy context.
+
+...oookay
+
+Sure, we'll just do *that* thing.
+
+### Making A Fake Window
+
+So in between registering the class and making the `i32` box,
+we've got quite a bit of new middle work
+```rust
+// in fn main
+  let _atom = unsafe { register_class(&wc) }.unwrap();
+
+  // fake window stuff
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  let fake_hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      "Fake Window",
+      None,
+      [1, 1],
+      null_mut(),
+    )
+  }
+  .unwrap();
+  let fake_hdc = unsafe { GetDC(fake_hwnd) };
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &pfd) }.unwrap();
+  // TODO: SetPixelFormat
+  assert!(unsafe { ReleaseDC(fake_hwnd, fake_hdc) } != 0);
+  assert!(unsafe { DestroyWindow(fake_hwnd) } != 0);
+
+  // real window stuff
+  let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+```
+
+Okay, I guess that makes sense.
+
+Hmm, I don't like those mysterious `!= 0` parts.
+Let's wrap those into our lib.
+And since we're wrapping `ReleaseDC` we might as well do `GetDC` too.
+
+```rust
+/// See [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+pub unsafe fn get_dc(hwnd: HWND) -> Option<HDC> {
+  let hdc = GetDC(hwnd);
+  if hdc.is_null() {
+    None
+  } else {
+    Some(hdc)
+  }
+}
+
+/// See [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+#[must_use]
+pub unsafe fn release_dc(hwnd: HWND, hdc: HDC) -> bool {
+  let was_released = ReleaseDC(hwnd, hdc);
+  was_released != 0
+}
+
+/// See [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+pub unsafe fn destroy_window(hwnd: HWND) -> Result<(), Win32Error> {
+  let destroyed = DestroyWindow(hwnd);
+  if destroyed != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+Here the output *isn't* always a result.
+Since `GetDC` doesn't have any error code to report (according to its docs), we just use `Option`.
+Similarly, `ReleaseDC` doesn't seem to report an error code, so we just return a `bool`.
+However, in both cases we want to encourage the caller to actually use the output,
+because not checking these could lead to nasty memory leaks.
+So we use the `#[must_use]` attribute to ensure that they get a warning if they don't use the output value.
+
+Which means our program looks more like this now:
+```rust
+  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &pfd) }.unwrap();
+  // TODO: SetPixelFormat
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+```
+
+## SetPixelFormat
+
+Once we've chosen a pixel format, we set it to the HDC with [SetPixelFormat](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat).
+```rust
+#[link(name = "Gdi32")]
+extern "system" {
+  /// [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+  pub fn SetPixelFormat(
+    hdc: HDC, format: c_int, ppfd: *const PIXELFORMATDESCRIPTOR,
+  ) -> BOOL;
+}
+```
+
+Which we wrap up a little nicer like this:
+```rust
+/// Sets the pixel format of an HDC.
+///
+/// * If it's a window's HDC then it sets the pixel format of the window.
+/// * You can't set a window's pixel format more than once.
+/// * Call this *before* creating an OpenGL context.
+/// * OpenGL windows should use [`WS_CLIPCHILDREN`] and [`WS_CLIPSIBLINGS`]
+/// * OpenGL windows should *not* use `CS_PARENTDC`
+///
+/// See [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+pub unsafe fn set_pixel_format(
+  hdc: HDC, format: c_int, ppfd: &PIXELFORMATDESCRIPTOR,
+) -> Result<(), Win32Error> {
+  let success = SetPixelFormat(hdc, format, ppfd);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+Oh, what's that?
+Yeah we need some extra window styles.
+
+```rust
+/// Excludes the area occupied by child windows when drawing occurs within the
+/// parent window.
+///
+/// This style is used when creating the parent window.
+pub const WS_CLIPCHILDREN: u32 = 0x02000000;
+
+/// Clips child windows relative to each other.
+///
+/// That is, when a particular child window receives a WM_PAINT message,
+/// the WS_CLIPSIBLINGS style clips all other overlapping child windows out of
+/// the region of the child window to be updated. If WS_CLIPSIBLINGS is not
+/// specified and child windows overlap, it is possible, when drawing within the
+/// client area of a child window, to draw within the client area of a
+/// neighboring child window.
+pub const WS_CLIPSIBLINGS: u32 = 0x04000000;
+
+pub unsafe fn create_app_window(
+  // ...
+  let hwnd = CreateWindowExW(
+    WS_EX_APPWINDOW | WS_EX_OVERLAPPEDWINDOW,
+    class_name_null.as_ptr(),
+    window_name_null.as_ptr(),
+    // New Style!
+    WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+    x,
+    y,
+    width,
+    height,
+    null_mut(),
+    null_mut(),
+    get_process_handle(),
+    create_param,
+  );
+  // ...
+}
+```
+
+Okay, so now we can set the pixel format on our fake HDC:
+```rust
+  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &pfd) }.unwrap();
+  unsafe { set_pixel_format(fake_hdc, pf_index, &pfd) }.unwrap();
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+```
+
+Hmm, wait, hold on.
+So we choose a pixel format, and get an index.
+How do we check if that index is close to what we wanted?
+Ah, the docs say we need [DescribePixelFormat](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat).
+This is one of those "does two things at once" functions.
+When it succeeds, not only is the return code a non-zero value,
+it's the maximum index of pixel formats.
+So you can call the function with a null pointer to just get the maximum index.
+We'll split this up into two different functions.
+
+```rust
+/// Gets the maximum pixel format index for the HDC.
+///
+/// Pixel format indexes are 1-based.
+///
+/// To print out info on all the pixel formats you'd do something like this:
+/// ```no_run
+/// # use triangle_from_scratch::win32::*;
+/// let hdc = todo!("create a window to get an HDC");
+/// let max = unsafe { get_max_pixel_format_index(hdc).unwrap() };
+/// for index in 1..=max {
+///   let pfd = unsafe { describe_pixel_format(hdc, index).unwrap() };
+///   todo!("print the pfd info you want to know");
+/// }
+/// ```
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn get_max_pixel_format_index(
+  hdc: HDC,
+) -> Result<c_int, Win32Error> {
+  let max_index = DescribePixelFormat(
+    hdc,
+    1,
+    size_of::<PIXELFORMATDESCRIPTOR>() as _,
+    null_mut(),
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(max_index)
+  }
+}
+
+/// Gets the pixel format info for a given pixel format index.
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn describe_pixel_format(
+  hdc: HDC, format: c_int,
+) -> Result<PIXELFORMATDESCRIPTOR, Win32Error> {
+  let mut pfd = PIXELFORMATDESCRIPTOR::default();
+  let max_index = DescribePixelFormat(
+    hdc,
+    format,
+    size_of::<PIXELFORMATDESCRIPTOR>() as _,
+    &mut pfd,
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(pfd)
+  }
+}
+```
+
+So we'll print out our pixel format info when we boot the program, seems neat to know.
+We just throw a `#[derive(Debug)]` on the `PIXELFORMATDESCRIPTOR` struct and add a little bit to our `main`.
+
+```rust
+  if let Ok(pfd) = unsafe { describe_pixel_format(fake_hdc, pf_index) } {
+    println!("{:?}", pfd);
+  } else {
+    println!("Error: Couldn't get pixel format description.");
+  }
+```
+

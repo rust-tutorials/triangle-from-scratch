@@ -6,7 +6,10 @@
 
 pub use core::ffi::c_void;
 
-use core::ptr::{null, null_mut};
+use core::{
+  mem::size_of,
+  ptr::{null, null_mut},
+};
 
 macro_rules! unsafe_impl_default_zeroed {
   ($t:ty) => {
@@ -142,6 +145,7 @@ pub struct CREATESTRUCTW {
 }
 unsafe_impl_default_zeroed!(CREATESTRUCTW);
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct PIXELFORMATDESCRIPTOR {
   pub nSize: WORD,
@@ -179,7 +183,7 @@ impl Default for PIXELFORMATDESCRIPTOR {
   #[must_use]
   fn default() -> Self {
     let mut out: Self = unsafe { core::mem::zeroed() };
-    out.nSize = core::mem::size_of::<Self>() as WORD;
+    out.nSize = size_of::<Self>() as WORD;
     out.nVersion = 1;
     out
   }
@@ -196,18 +200,59 @@ pub const CS_HREDRAW: u32 = 0x0002;
 /// height of the client area.
 pub const CS_VREDRAW: u32 = 0x0001;
 
+/// The window is an overlapped window.
+///
+/// An overlapped window has a title bar and a border. Same as the WS_TILED
+/// style.
 pub const WS_OVERLAPPED: u32 = 0x00000000;
+
+/// The window has a title bar (includes the WS_BORDER style).
 pub const WS_CAPTION: u32 = 0x00C00000;
+
+/// The window has a window menu on its title bar.
+///
+/// The WS_CAPTION style must also be specified.
 pub const WS_SYSMENU: u32 = 0x00080000;
+
+/// The window has a sizing border. Same as the WS_SIZEBOX style.
 pub const WS_THICKFRAME: u32 = 0x00040000;
+
+/// The window has a minimize button.
+///
+/// Cannot be combined with the WS_EX_CONTEXTHELP style. The WS_SYSMENU style
+/// must also be specified.
 pub const WS_MINIMIZEBOX: u32 = 0x00020000;
+
+/// The window has a maximize button.
+///
+/// Cannot be combined with the WS_EX_CONTEXTHELP style. The WS_SYSMENU style
+/// must also be specified.
 pub const WS_MAXIMIZEBOX: u32 = 0x00010000;
+
+/// The window is an overlapped window. Same as the WS_TILEDWINDOW style.
 pub const WS_OVERLAPPEDWINDOW: u32 = WS_OVERLAPPED
   | WS_CAPTION
   | WS_SYSMENU
   | WS_THICKFRAME
   | WS_MINIMIZEBOX
   | WS_MAXIMIZEBOX;
+
+/// Excludes the area occupied by child windows when drawing occurs within the
+/// parent window.
+///
+/// This style is used when creating the parent window.
+pub const WS_CLIPCHILDREN: u32 = 0x02000000;
+
+/// Clips child windows relative to each other.
+///
+/// That is, when a particular child window receives a WM_PAINT message,
+/// the WS_CLIPSIBLINGS style clips all other overlapping child windows out of
+/// the region of the child window to be updated. If WS_CLIPSIBLINGS is not
+/// specified and child windows overlap, it is possible, when drawing within the
+/// client area of a child window, to draw within the client area of a
+/// neighboring child window.
+pub const WS_CLIPSIBLINGS: u32 = 0x04000000;
+
 pub const CW_USEDEFAULT: c_int = 0x80000000_u32 as c_int;
 pub const SW_SHOW: c_int = 5;
 
@@ -258,6 +303,7 @@ pub const WM_CREATE: u32 = 0x0001;
 /// * `lparam`: Not used.
 /// * See [`WM_QUIT`](https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-quit)
 pub const WM_QUIT: u32 = 0x0012;
+
 pub const IDC_ARROW: LPCWSTR = MAKEINTRESOURCEW(32512);
 pub const COLOR_WINDOW: u32 = 5;
 pub const MB_OKCANCEL: u32 = 1;
@@ -390,6 +436,12 @@ extern "system" {
 
   /// [`SetCursor`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursor)
   pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
+
+  /// [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+  pub fn GetDC(hWnd: HWND) -> HDC;
+
+  /// [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+  pub fn ReleaseDC(hWnd: HWND, hDC: HDC) -> c_int;
 }
 
 #[link(name = "Gdi32")]
@@ -398,6 +450,17 @@ extern "system" {
   pub fn ChoosePixelFormat(
     hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR,
   ) -> c_int;
+
+  /// [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+  pub fn DescribePixelFormat(
+    hdc: HDC, iPixelFormat: c_int, nBytes: UINT,
+    ppfd: *mut PIXELFORMATDESCRIPTOR,
+  ) -> c_int;
+
+  /// [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+  pub fn SetPixelFormat(
+    hdc: HDC, format: c_int, ppfd: *const PIXELFORMATDESCRIPTOR,
+  ) -> BOOL;
 }
 
 /// [`MAKEINTRESOURCEW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
@@ -592,7 +655,7 @@ pub unsafe fn create_app_window(
     WS_EX_APPWINDOW | WS_EX_OVERLAPPEDWINDOW,
     class_name_null.as_ptr(),
     window_name_null.as_ptr(),
-    WS_OVERLAPPEDWINDOW,
+    WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
     x,
     y,
     width,
@@ -795,5 +858,105 @@ pub unsafe fn choose_pixel_format(
     Ok(index)
   } else {
     Err(get_last_error())
+  }
+}
+
+/// See [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+#[must_use]
+pub unsafe fn get_dc(hwnd: HWND) -> Option<HDC> {
+  let hdc = GetDC(hwnd);
+  if hdc.is_null() {
+    None
+  } else {
+    Some(hdc)
+  }
+}
+
+/// See [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+#[must_use]
+pub unsafe fn release_dc(hwnd: HWND, hdc: HDC) -> bool {
+  let was_released = ReleaseDC(hwnd, hdc);
+  was_released != 0
+}
+
+/// See [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+pub unsafe fn destroy_window(hwnd: HWND) -> Result<(), Win32Error> {
+  let destroyed = DestroyWindow(hwnd);
+  if destroyed != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Sets the pixel format of an HDC.
+///
+/// * If it's a window's HDC then it sets the pixel format of the window.
+/// * You can't set a window's pixel format more than once.
+/// * Call this *before* creating an OpenGL context.
+/// * OpenGL windows should use [`WS_CLIPCHILDREN`] and [`WS_CLIPSIBLINGS`]
+/// * OpenGL windows should *not* use `CS_PARENTDC`
+///
+/// See [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+pub unsafe fn set_pixel_format(
+  hdc: HDC, format: c_int, ppfd: &PIXELFORMATDESCRIPTOR,
+) -> Result<(), Win32Error> {
+  let success = SetPixelFormat(hdc, format, ppfd);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Gets the maximum pixel format index for the HDC.
+///
+/// Pixel format indexes are 1-based.
+///
+/// To print out info on all the pixel formats you'd do something like this:
+/// ```no_run
+/// # use triangle_from_scratch::win32::*;
+/// let hdc = todo!("create a window to get an HDC");
+/// let max = unsafe { get_max_pixel_format_index(hdc).unwrap() };
+/// for index in 1..=max {
+///   let pfd = unsafe { describe_pixel_format(hdc, index).unwrap() };
+///   todo!("print the pfd info you want to know");
+/// }
+/// ```
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn get_max_pixel_format_index(
+  hdc: HDC,
+) -> Result<c_int, Win32Error> {
+  let max_index = DescribePixelFormat(
+    hdc,
+    1,
+    size_of::<PIXELFORMATDESCRIPTOR>() as _,
+    null_mut(),
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(max_index)
+  }
+}
+
+/// Gets the pixel format info for a given pixel format index.
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn describe_pixel_format(
+  hdc: HDC, format: c_int,
+) -> Result<PIXELFORMATDESCRIPTOR, Win32Error> {
+  let mut pfd = PIXELFORMATDESCRIPTOR::default();
+  let max_index = DescribePixelFormat(
+    hdc,
+    format,
+    size_of::<PIXELFORMATDESCRIPTOR>() as _,
+    &mut pfd,
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(pfd)
   }
 }

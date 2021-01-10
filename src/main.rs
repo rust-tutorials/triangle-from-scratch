@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use core::ptr::null_mut;
+
 use triangle_from_scratch::win32::*;
 
 fn main() {
@@ -15,6 +17,38 @@ fn main() {
 
   let _atom = unsafe { register_class(&wc) }.unwrap();
 
+  // fake window stuff
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  let fake_hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      "Fake Window",
+      None,
+      [1, 1],
+      null_mut(),
+    )
+  }
+  .unwrap();
+  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &pfd) }.unwrap();
+  if let Ok(pfd) = unsafe { describe_pixel_format(fake_hdc, pf_index) } {
+    println!("{:?}", pfd);
+  } else {
+    println!("Error: Couldn't get pixel format description.");
+  }
+  unsafe { set_pixel_format(fake_hdc, pf_index, &pfd) }.unwrap();
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+
+  // real window stuff
   let lparam: *mut i32 = Box::leak(Box::new(5_i32));
   let hwnd = unsafe {
     create_app_window(
@@ -27,20 +61,7 @@ fn main() {
   }
   .unwrap();
 
-  let pfd = PIXELFORMATDESCRIPTOR {
-    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    iPixelType: PFD_TYPE_RGBA,
-    cColorBits: 32,
-    cDepthBits: 24,
-    cStencilBits: 8,
-    iLayerType: PFD_MAIN_PLANE,
-    ..Default::default()
-  };
-  // TODO: GetDC
-  // let pixel_format_index = unsafe { choose_pixel_format(hdc, &pfd)
-  // }.unwrap();
-  // TODO: ReleaseDC
-
+  println!("getting ready to show the window.");
   let _previously_visible = unsafe { ShowWindow(hwnd, SW_SHOW) };
 
   loop {
@@ -67,6 +88,7 @@ pub unsafe extern "system" fn window_procedure(
       println!("NC Create");
       let createstruct: *mut CREATESTRUCTW = lparam as *mut _;
       if createstruct.is_null() {
+        println!("no create struct!");
         return 0;
       }
       let ptr = (*createstruct).lpCreateParams as *mut i32;
