@@ -695,3 +695,111 @@ We just throw a `#[derive(Debug)]` on the `PIXELFORMATDESCRIPTOR` struct and add
   }
 ```
 
+Let's give this a try and see what pixel format info prints out:
+```
+D:\dev\triangle-from-scratch>cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.34s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+Create
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+userdata ptr is null, no cleanup
+NC Create
+Create
+```
+
+Uh... huh? So we're seeing the info, but there's no window!
+Some sort of problem has prevented the real window from showing up.
+If we comment out all the "fake window" stuff the real window comes back,
+so some part of that code is at fault here.
+
+Hmm.
+
+What if we make a fake window class to go with our fake window?
+
+```rust
+fn main() {
+  // fake window stuff
+  let fake_window_class = "Fake Window Class";
+  let fake_window_class_wn = wide_null(fake_window_class);
+
+  let mut fake_wc = WNDCLASSW::default();
+  fake_wc.style = CS_OWNDC;
+  fake_wc.lpfnWndProc = Some(DefWindowProcW);
+  fake_wc.hInstance = get_process_handle();
+  fake_wc.lpszClassName = fake_window_class_wn.as_ptr();
+
+  let _atom = unsafe { register_class(&fake_wc) }.unwrap();
+
+  let pfd = // ...
+  let fake_hwnd = unsafe {
+    create_app_window(
+      fake_window_class,
+      "Fake Window",
+      None,
+      [1, 1],
+      null_mut(),
+    )
+  }
+  .unwrap();
+```
+Okay, now it works.
+Not sure *what* the difference is here, but I guess we can investigate that later.
+Only little problem is that now we have an extra window class floating around.
+If we use [UnregisterClassW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+we can clean that up.
+
+With `UnregisterClassW` you can pass in a pointer to a class name,
+*or* you can pass in an atom value.
+We'll make a separate function for each style.
+```rust
+#[link(name = "User32")]
+extern "system" {
+  /// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+  pub fn UnregisterClassW(lpClassName: LPCWSTR, hInstance: HINSTANCE) -> BOOL;
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The name must be the name of a registered window class.
+/// * This requires re-encoding the name to null-terminated utf-16, which
+///   allocates. Using [`unregister_class_by_atom`] instead does not allocate,
+///   if you have the atom available.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See
+/// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_name(
+  name: &str, instance: HINSTANCE,
+) -> Result<(), Win32Error> {
+  let name_null = wide_null(name);
+  let out = UnregisterClassW(name_null.as_ptr(), instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The atom must be the atom of a registered window class.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_atom(
+  a: ATOM, instance: HINSTANCE,
+) -> Result<(), Win32Error> {
+  let out = UnregisterClassW(a as LPCWSTR, instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+
+TODO: debug for Win32Error

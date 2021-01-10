@@ -377,6 +377,9 @@ extern "system" {
   /// [`RegisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw)
   pub fn RegisterClassW(lpWndClass: *const WNDCLASSW) -> ATOM;
 
+  /// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+  pub fn UnregisterClassW(lpClassName: LPCWSTR, hInstance: HINSTANCE) -> BOOL;
+
   /// [`CreateWindowExW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw)
   pub fn CreateWindowExW(
     dwExStyle: DWORD, lpClassName: LPCWSTR, lpWindowName: LPCWSTR,
@@ -562,12 +565,11 @@ pub fn set_last_error(e: Win32Error) {
 /// Newtype wrapper for a Win32 error code.
 ///
 /// If bit 29 is set, it's an application error.
-#[derive(Debug)]
 #[repr(transparent)]
 pub struct Win32Error(pub DWORD);
 impl std::error::Error for Win32Error {}
 
-impl core::fmt::Display for Win32Error {
+impl core::fmt::Debug for Win32Error {
   /// Displays the error using `FormatMessageW`
   ///
   /// ```
@@ -582,8 +584,12 @@ impl core::fmt::Display for Win32Error {
     pub const FORMAT_MESSAGE_FROM_SYSTEM: DWORD = 0x00001000;
     pub const FORMAT_MESSAGE_IGNORE_INSERTS: DWORD = 0x00000200;
 
+    if f.alternate() {
+      return write!(f, "Win32Error({})", self.0);
+    }
+
     if self.0 & (1 << 29) > 0 {
-      return write!(f, "Win32ApplicationError({})", self.0);
+      return write!(f, "Win32 Application Error ({})", self.0);
     }
     let dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER
       | FORMAT_MESSAGE_FROM_SYSTEM
@@ -633,6 +639,11 @@ impl core::fmt::Display for Win32Error {
       }
       Ok(())
     }
+  }
+}
+impl core::fmt::Display for Win32Error {
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    write!(f, "{:?}", self)
   }
 }
 
@@ -958,5 +969,46 @@ pub unsafe fn describe_pixel_format(
     Err(get_last_error())
   } else {
     Ok(pfd)
+  }
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The name must be the name of a registered window class.
+/// * This requires re-encoding the name to null-terminated utf-16, which
+///   allocates. Using [`unregister_class_by_atom`] instead does not allocate,
+///   if you have the atom available.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See
+/// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_name(
+  name: &str, instance: HINSTANCE,
+) -> Result<(), Win32Error> {
+  let name_null = wide_null(name);
+  let out = UnregisterClassW(name_null.as_ptr(), instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The atom must be the atom of a registered window class.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_atom(
+  a: ATOM, instance: HINSTANCE,
+) -> Result<(), Win32Error> {
+  let out = UnregisterClassW(a as LPCWSTR, instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
   }
 }

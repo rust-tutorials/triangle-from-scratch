@@ -5,19 +5,20 @@ use core::ptr::null_mut;
 use triangle_from_scratch::win32::*;
 
 fn main() {
-  let sample_window_class = "Sample Window Class";
-  let sample_window_class_wn = wide_null(sample_window_class);
-
-  let mut wc = WNDCLASSW::default();
-  wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-  wc.lpfnWndProc = Some(window_procedure);
-  wc.hInstance = get_process_handle();
-  wc.lpszClassName = sample_window_class_wn.as_ptr();
-  wc.hCursor = load_predefined_cursor(IDCursor::Arrow).unwrap();
-
-  let _atom = unsafe { register_class(&wc) }.unwrap();
+  let instance = get_process_handle();
 
   // fake window stuff
+  let fake_window_class = "Fake Window Class";
+  let fake_window_class_wn = wide_null(fake_window_class);
+
+  let mut fake_wc = WNDCLASSW::default();
+  fake_wc.style = CS_OWNDC;
+  fake_wc.lpfnWndProc = Some(DefWindowProcW);
+  fake_wc.hInstance = instance;
+  fake_wc.lpszClassName = fake_window_class_wn.as_ptr();
+
+  let fake_atom = unsafe { register_class(&fake_wc) }.unwrap();
+
   let pfd = PIXELFORMATDESCRIPTOR {
     dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
     iPixelType: PFD_TYPE_RGBA,
@@ -29,7 +30,7 @@ fn main() {
   };
   let fake_hwnd = unsafe {
     create_app_window(
-      sample_window_class,
+      fake_window_class,
       "Fake Window",
       None,
       [1, 1],
@@ -47,8 +48,21 @@ fn main() {
   unsafe { set_pixel_format(fake_hdc, pf_index, &pfd) }.unwrap();
   assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
   unsafe { destroy_window(fake_hwnd) }.unwrap();
+  unsafe { unregister_class_by_atom(fake_atom, instance) }.unwrap();
 
   // real window stuff
+  let sample_window_class = "Sample Window Class";
+  let sample_window_class_wn = wide_null(sample_window_class);
+
+  let mut wc = WNDCLASSW::default();
+  wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+  wc.lpfnWndProc = Some(window_procedure);
+  wc.hInstance = instance;
+  wc.lpszClassName = sample_window_class_wn.as_ptr();
+  wc.hCursor = load_predefined_cursor(IDCursor::Arrow).unwrap();
+
+  let _atom = unsafe { register_class(&wc) }.unwrap();
+
   let lparam: *mut i32 = Box::leak(Box::new(5_i32));
   let hwnd = unsafe {
     create_app_window(
