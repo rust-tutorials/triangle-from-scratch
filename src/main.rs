@@ -69,8 +69,8 @@ pub unsafe extern "system" fn window_procedure(
       if createstruct.is_null() {
         return 0;
       }
-      let boxed_i32_ptr = (*createstruct).lpCreateParams;
-      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
+      let ptr = (*createstruct).lpCreateParams as *mut i32;
+      return set_window_userdata::<i32>(hwnd, ptr).is_ok() as LRESULT;
     }
     WM_CREATE => println!("Create"),
     WM_CLOSE => {
