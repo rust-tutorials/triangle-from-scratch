@@ -53,8 +53,8 @@ pub unsafe extern "system" fn window_procedure(
       if createstruct.is_null() {
         return 0;
       }
-      let boxed_i32_ptr = (*createstruct).lpCreateParams;
-      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
+      let ptr = (*createstruct).lpCreateParams as *mut i32;
+      return set_window_userdata::<i32>(hwnd, ptr).is_ok() as LRESULT;
     }
     WM_CREATE => println!("Create"),
     WM_CLOSE => {
@@ -71,7 +71,7 @@ pub unsafe extern "system" fn window_procedure(
       }
     }
     WM_DESTROY => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
           Box::from_raw(ptr);
           println!("Cleaned up the box.");
@@ -86,9 +86,8 @@ pub unsafe extern "system" fn window_procedure(
       post_quit_message(0);
     }
     WM_PAINT => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
-          let ptr = ptr as *mut i32;
           println!("Current ptr: {}", *ptr);
           *ptr += 1;
         }

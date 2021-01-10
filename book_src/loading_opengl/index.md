@@ -28,6 +28,6 @@ The general idea is that we need to do two things:
 ## Acknowledgements
 
 For this portion of the guide I'd like to give an incredible acknowledgement to
-[glowcoil](https://github.com/glowcoil), who out out the
+[glowcoil](https://github.com/glowcoil), who wrote the
 [raw-gl-context](https://github.com/glowcoil/raw-gl-context)
 crate, which gives come very clean and clear examples of how you open a GL context on the major platforms.

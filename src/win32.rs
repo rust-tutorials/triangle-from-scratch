@@ -264,6 +264,11 @@ pub const MB_OKCANCEL: u32 = 1;
 pub const IDOK: c_int = 1;
 pub const GWLP_USERDATA: c_int = -21;
 
+pub const WS_EX_APPWINDOW: DWORD = 0x00040000;
+pub const WS_EX_WINDOWEDGE: DWORD = 0x00000100;
+pub const WS_EX_CLIENTEDGE: DWORD = 0x00000200;
+pub const WS_EX_OVERLAPPEDWINDOW: DWORD = WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE;
+
 /// [`PIXELFORMATDESCRIPTOR`] pixel type
 pub const PFD_TYPE_RGBA: u8 = 0;
 /// [`PIXELFORMATDESCRIPTOR`] pixel type
@@ -499,14 +504,6 @@ pub fn set_last_error(e: Win32Error) {
 pub struct Win32Error(pub DWORD);
 impl std::error::Error for Win32Error {}
 
-pub const FORMAT_MESSAGE_ALLOCATE_BUFFER: DWORD = 0x00000100;
-pub const FORMAT_MESSAGE_FROM_SYSTEM: DWORD = 0x00001000;
-pub const FORMAT_MESSAGE_IGNORE_INSERTS: DWORD = 0x00000200;
-pub const WS_EX_APPWINDOW: DWORD = 0x00040000;
-pub const WS_EX_WINDOWEDGE: DWORD = 0x00000100;
-pub const WS_EX_CLIENTEDGE: DWORD = 0x00000200;
-pub const WS_EX_OVERLAPPEDWINDOW: DWORD = WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE;
-
 impl core::fmt::Display for Win32Error {
   /// Displays the error using `FormatMessageW`
   ///
@@ -518,6 +515,10 @@ impl core::fmt::Display for Win32Error {
   /// assert_eq!("Win32ApplicationError(536870912)", app_error);
   /// ```
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    pub const FORMAT_MESSAGE_ALLOCATE_BUFFER: DWORD = 0x00000100;
+    pub const FORMAT_MESSAGE_FROM_SYSTEM: DWORD = 0x00001000;
+    pub const FORMAT_MESSAGE_IGNORE_INSERTS: DWORD = 0x00000200;
+
     if self.0 & (1 << 29) > 0 {
       return write!(f, "Win32ApplicationError({})", self.0);
     }
@@ -645,9 +646,9 @@ pub fn translate_message(msg: &MSG) -> bool {
 /// **Returns:** The previous userdata pointer.
 ///
 /// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
-pub unsafe fn set_window_userdata(
-  hwnd: HWND, ptr: *mut c_void,
-) -> Result<*mut c_void, Win32Error> {
+pub unsafe fn set_window_userdata<T>(
+  hwnd: HWND, ptr: *mut T,
+) -> Result<*mut T, Win32Error> {
   set_last_error(Win32Error(0));
   let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
   if out == 0 {
@@ -656,10 +657,10 @@ pub unsafe fn set_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 
@@ -668,9 +669,7 @@ pub unsafe fn set_window_userdata(
 /// **Returns:** The userdata pointer.
 ///
 /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
-pub unsafe fn get_window_userdata(
-  hwnd: HWND,
-) -> Result<*mut c_void, Win32Error> {
+pub unsafe fn get_window_userdata<T>(hwnd: HWND) -> Result<*mut T, Win32Error> {
   set_last_error(Win32Error(0));
   let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
   if out == 0 {
@@ -679,10 +678,10 @@ pub unsafe fn get_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 
@@ -785,4 +784,16 @@ where
   let output = f(hdc, ps.fErase != 0, ps.rcPaint);
   end_paint(hwnd, &ps);
   output
+}
+
+/// See [`ChoosePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat)
+pub unsafe fn choose_pixel_format(
+  hdc: HDC, ppfd: &PIXELFORMATDESCRIPTOR,
+) -> Result<c_int, Win32Error> {
+  let index = ChoosePixelFormat(hdc, ppfd);
+  if index != 0 {
+    Ok(index)
+  } else {
+    Err(get_last_error())
+  }
 }

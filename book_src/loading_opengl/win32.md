@@ -21,8 +21,7 @@ However, they still explain how to create a context on the wiki because it's obv
 
 # Expanding the "Cleaned Up" Win32 Example
 
-So for this, we'll be using the "cleaned up" Win32 example as our base,
-and then continuing on from there.
+For this lesson we'll be using the "cleaned up" Win32 example as our starting point.
 
 ## Device Context
 
@@ -39,9 +38,11 @@ we need to set `CS_OWNDC` in the `style` field so that each window has its own d
   // ...
 ```
 
-The numeric value of `CS_OWNDC` can be found with a [search of MSDN](https://docs.microsoft.com/en-us/search/?scope=Desktop&terms=CS_OWNDC),
-which leads us to the [Window Class Styles](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles) page.
-If we glance at the other options there's mostly stuff we don't need.
+If we search for `CS_OWNDC` [in the MSDN pages](https://docs.microsoft.com/en-us/search/?scope=Desktop&terms=CS_OWNDC),
+it leads us to the [Window Class Styles](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles) page.
+Ah, so many things to look at.
+We know we want `CS_OWNDC`,
+but if we glance at the other options there's mostly stuff we don't need.
 Interestingly, it looks like maybe you need to enable double-click support on your window if you want it?
 We don't need that now, but just something to remember if you want it later on.
 There's also `CS_HREDRAW` and `CS_VREDRAW`,
@@ -256,7 +257,9 @@ but I thought we'd just give it a try,
 and see how it feels.
 
 Anyway, now we need to declare a bunch of consts.
-Except, the `PIXELFORMATDESCRIPTOR` page on MSDN doesn't list the values.
+
+Except, the `PIXELFORMATDESCRIPTOR` page on MSDN **doesn't** list the values.
+
 Guess it's back to grepping through the windows header files.
 By the way, if you're not aware,
 there's a very fast grep tool written in rust called `ripgrep` you might want to try.
@@ -311,7 +314,14 @@ pub const PFD_DOUBLEBUFFER_DONTCARE: u32 = 0x40000000;
 pub const PFD_STEREO_DONTCARE: u32 = 0x80000000;
 ```
 
-We're making most of the consts `u8` while the rest of them are `u32` just because that way they naturally have the type of the field in the struct that they go with.
+When translating a C `#define` into a Rust declaration you've gotta use a little judgement.
+In addition to looking at the raw numeric value,
+you've gotta try and match the type of the const to the type of the place it gets used the most.
+The pixel types and layer types get assigned to a field that's a `u8`, so we declare them as `u8`.
+The flags all get combined and assigned to a field that's a `u32`, so we declare them as a `u32`.
+In C it makes little difference (because C numbers will *generally* coerce automatically),
+but in Rust we would have to write some casts somewhere if the types don't line up,
+so we try to make our lives easy later by getting the declaration itself to have the most used type.
 
 ## ChoosePixelFormat
 
@@ -320,6 +330,7 @@ to get a "pixel format index" that's the closest available pixel format to our r
 
 First we declare the external call of course:
 ```rust
+// note: our first use of Gdi32!
 #[link(name = "Gdi32")]
 extern "system" {
   /// [`ChoosePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat)
@@ -329,12 +340,69 @@ extern "system" {
 }
 ```
 
-Oh look, we're using a new external library.
-Instead of just Kernel32 and User32, now we've got Gdi32 in the mix.
-Neat, I guess. Doesn't really make a difference.
-
 Of course, this function can fail,
-and we want to have a `Result` return type in the final version we'll use.
-Instead of doing a whole thing with the raw calls and then making the "nicer" version after,
-we'll just make the nicer version immediately,
-since by now we've seen how to do that.
+so we want to have a `Result` as the output type in the final version we'll use.
+Instead of doing a whole thing with the raw calls,
+and then doing an entire revision phase to make all the "nicer" versions after that,
+we'll just jump right to the part where we make the nice version as we cover each new function.
+Personally, I think that seeing the "all raw calls" version of something is a little fun once,
+but once you start making things Rusty you might as well keep doing it as you go.
+We won't always know exactly how we want to use each extern function the moment we first see it,
+but each wrapper function is generally quite small,
+so we can usually make a change if we realize something new later on.
+
+Let's check the docs:
+
+> If the function succeeds, the return value is a pixel format index (one-based) that is the closest match to the given pixel format descriptor.
+> If the function fails, the return value is zero. To get extended error information, call GetLastError.
+
+The docs do *not* seem to indicate that you're allowed to pass a null pointer for the pixel format descriptor,
+so we can just require a reference instead of requiring a const pointer.
+
+Okay, easy enough:
+```rust
+/// See [`ChoosePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat)
+pub unsafe fn choose_pixel_format(
+  hdc: HDC, ppfd: &PIXELFORMATDESCRIPTOR,
+) -> Result<c_int, Win32Error> {
+  let index = ChoosePixelFormat(hdc, ppfd);
+  if index != 0 {
+    Ok(index)
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+
+Can we improve it any more than this?
+The only thing I can think of would be *maybe* to newtype that `c_int` value.
+We could make a `PixelFormatIndex` or something if we wanted to.
+I sure thought about it for a while, sitting on the bus.
+But now that I'm at the keyboard, it doesn't seem very error prone even as just a `c_int`.
+I think we're fine without doing that extra work.
+
+Code you don't write at all is more valuable than code you do write.
+Or, something wise sounding like that.
+
+Alright so we're gonna set up a `PIXELFORMATDESCRIPTOR` and choose a pixel format:
+```rust
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  // Oops, we don't have an HDC value yet!
+  let pixel_format_index = unsafe { choose_pixel_format(hdc, &pfd) }.unwrap();
+```
+AGH! With no HDC from anywhere we can't choose a pixel format!
+Blast, and such.
+
+Alright so we'll move this *after* we create our window, before we show it.
+
+We'll need to use [GetDC](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+to get the HDC value for our window,
+and then [ReleaseDC](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)

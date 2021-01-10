@@ -15,16 +15,6 @@ fn main() {
 
   let _atom = unsafe { register_class(&wc) }.unwrap();
 
-  let pfd = PIXELFORMATDESCRIPTOR {
-    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    iPixelType: PFD_TYPE_RGBA,
-    cColorBits: 32,
-    cDepthBits: 24,
-    cStencilBits: 8,
-    iLayerType: PFD_MAIN_PLANE,
-    ..Default::default()
-  };
-
   let lparam: *mut i32 = Box::leak(Box::new(5_i32));
   let hwnd = unsafe {
     create_app_window(
@@ -36,6 +26,21 @@ fn main() {
     )
   }
   .unwrap();
+
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  // TODO: GetDC
+  // let pixel_format_index = unsafe { choose_pixel_format(hdc, &pfd)
+  // }.unwrap();
+  // TODO: ReleaseDC
+
   let _previously_visible = unsafe { ShowWindow(hwnd, SW_SHOW) };
 
   loop {
@@ -82,7 +87,7 @@ pub unsafe extern "system" fn window_procedure(
       }
     }
     WM_DESTROY => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
           Box::from_raw(ptr);
           println!("Cleaned up the box.");
@@ -97,9 +102,8 @@ pub unsafe extern "system" fn window_procedure(
       post_quit_message(0);
     }
     WM_PAINT => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
-          let ptr = ptr as *mut i32;
           println!("Current ptr: {}", *ptr);
           *ptr += 1;
         }
