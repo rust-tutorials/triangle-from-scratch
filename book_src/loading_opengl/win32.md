@@ -1187,8 +1187,7 @@ pub unsafe fn wgl_get_extension_string_arb(
     wgl_get_proc_address(c_str!("wglGetExtensionsStringARB"))?,
   );
   let p: *const u8 =
-    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT)).unwrap())(hdc)
-      .cast();
+    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT))?)(hdc).cast();
   if p.is_null() {
     Err(get_last_error())
   } else {
@@ -1268,7 +1267,7 @@ pub type wglChoosePixelFormatARB_t = Option<
     nMaxFormats: UINT,
     piFormats: *mut c_int,
     nNumFormats: *mut UINT,
-  ),
+  ) -> BOOL,
 >;
 pub type FLOAT = c_float;
 pub type c_float = f32;
@@ -1313,6 +1312,7 @@ We can move on to setting up our real context.
 
 Actually, let's briefly put all that stuff into a single library function.
 ```rust
+/// Grabs out the stuff you'll need to have fun with WGL.
 pub fn get_wgl_basics() -> Result<
   (
     Vec<String>,
@@ -1329,3 +1329,597 @@ pub fn get_wgl_basics() -> Result<
 It's just moving all the stuff you've seen over,
 and then putting in a lot of drop guard types like we saw in format message.
 There's not much new to talk about, so we'll keep moving.
+
+## Our New Window Setup
+
+Alright, so now let's get some useful stuff with our window:
+```rust
+struct WindowData {
+  hdc: HDC,
+}
+impl Default for WindowData {
+  fn default() -> Self {
+    unsafe { core::mem::zeroed() }
+  }
+}
+```
+
+Since it's going to be connected to a GL context now we don't want to get and free it with every `WM_PAINT`.
+Instead, we'll get it once after the window is created,
+then stuff it into the WindowData field and leave it there.
+The `WM_DESTROY` can clean it up before destroying the window itself.
+
+```rust
+// fn main
+  let lparam: *mut WindowData = Box::leak(Box::new(WindowData::default()));
+  let hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      "Sample Window Name",
+      None,
+      [800, 600],
+      lparam.cast(),
+    )
+  }
+  .unwrap();
+  let hdc = unsafe { get_dc(hwnd) }.unwrap();
+  unsafe { (*lparam).hdc = hdc };
+```
+
+And we need to adjust our window procedure:
+```rust
+    WM_DESTROY => {
+      match get_window_userdata::<WindowData>(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          let window_data = Box::from_raw(ptr);
+          let _ = release_dc(hwnd, window_data.hdc);
+          println!("Cleaned up the box.");
+        }
+        Ok(_) => {
+          println!("userdata ptr is null, no cleanup")
+        }
+        Err(e) => {
+          println!("Error while getting the userdata ptr for cleanup: {}", e)
+        }
+      }
+      post_quit_message(0);
+    }
+    WM_PAINT => match get_window_userdata::<WindowData>(hwnd) {
+      Ok(ptr) if !ptr.is_null() => {
+        // TODO: real painting, eventually
+        println!("painting!");
+      }
+      Ok(_) => {
+        println!("userdata ptr is null")
+      }
+      Err(e) => {
+        println!("Error while getting the userdata ptr: {}", e)
+      }
+    },
+```
+
+## Finally We Call wglChoosePixelFormatARB
+
+We're finally ready to call our [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt) pointer.
+
+This one is fairly flexible.
+We can pass a list of integer (key,value) pairs,
+a list of float (key,value) pairs,
+and the space to get some outputs.
+
+As far as I can tell,
+there's no reason in the basic extension for any float attributes to be specified.
+Other extensions might add options in the future,
+but there's nothing for us there right now.
+The int attributes, on the other hand, have many interesting things.
+For both lists, the function knows the list is over when it sees a 0 in the key position.
+Also for both lists, we can pass a null instead of a list pointer.
+
+Meanwhile, we can have more than one output if we want.
+We pass in a count, and a pointer to an array of that length.
+The function will fill in as many array values as it can.
+There's also a pointer to an integer that we pass,
+and it gets written the number of outputs that were found.
+This could be the full array, but it could also be less than the full array.
+
+Interestingly, using `min_const_generics` might work here.
+We could make the array of values to return be a const generic.
+But we only actually need *one* pixel format,
+so we'll just pick the first format they give us.
+
+The wrapper function for this is not complex, but it is *tall*.
+```rust
+/// Arranges the data for calling a [`wglChoosePixelFormatARB_t`] procedure.
+///
+/// * Inputs are slices of [key, value] pairs.
+/// * Input slices **can** be empty.
+/// * Non-empty slices must have a zero value in the key position of the final
+///   pair.
+pub unsafe fn do_wglChoosePixelFormatARB(
+  f: wglChoosePixelFormatARB_t, hdc: HDC, int_attrs: &[[c_int; 2]],
+  float_attrs: &[[FLOAT; 2]],
+) -> Result<c_int, Win32Error> {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match int_attrs.last() {
+    Some([k, _v]) => {
+      if *k == 0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let f_ptr = match float_attrs.last() {
+    Some([k, _v]) => {
+      if *k == 0.0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let mut out_format = 0;
+  let mut out_format_count = 0;
+  let b = (f.ok_or(app_err)?)(
+    hdc,
+    i_ptr.cast(),
+    f_ptr.cast(),
+    1,
+    &mut out_format,
+    &mut out_format_count,
+  );
+  if b != 0 && out_format_count == 1 {
+    Ok(out_format)
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+
+Now the way we call this thing is that we're gonna have some "base" requirements,
+then we can look at the extensions and maybe ask for a little more if it's available,
+then we finalize the list by putting in that zero.
+
+After we get the pixel format index,
+we can't set it directly, because we need a `PIXELFORMATDESCRIPTOR` to go with it.
+First we use `describe_pixel_format`, then we can `set_pixel_format`.
+```rust
+  // base criteria
+  let mut int_attribs = vec![
+    [WGL_DRAW_TO_WINDOW_ARB, true as _],
+    [WGL_SUPPORT_OPENGL_ARB, true as _],
+    [WGL_DOUBLE_BUFFER_ARB, true as _],
+    [WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB],
+    [WGL_COLOR_BITS_ARB, 32],
+    [WGL_DEPTH_BITS_ARB, 24],
+    [WGL_STENCIL_BITS_ARB, 8],
+  ];
+  // if sRGB is supported, ask for that
+  if wgl_extensions.iter().any(|s| s == "WGL_EXT_framebuffer_sRGB") {
+    int_attribs.push([WGL_FRAMEBUFFER_SRGB_CAPABLE_EXT, true as _]);
+  };
+  // let's have some multisample if we can get it
+  if wgl_extensions.iter().any(|s| s == "WGL_ARB_multisample") {
+    int_attribs.push([WGL_SAMPLE_BUFFERS_ARB, 1]);
+  };
+  // finalize our list
+  int_attribs.push([0, 0]);
+  // choose a format, get the PIXELFORMATDESCRIPTOR, and set it.
+  let pix_format = unsafe {
+    do_wglChoosePixelFormatARB(wglChoosePixelFormatARB, hdc, &int_attribs, &[])
+  }
+  .unwrap();
+  let pfd = unsafe { describe_pixel_format(hdc, pix_format) }.unwrap();
+  unsafe { set_pixel_format(hdc, pix_format, &pfd) }.unwrap();
+```
+
+## Open That Stupid Context Already (wglCreateContextAttribsARB)
+
+Now that we have a pixel format set, we can create a context.
+
+To create an advanced context,
+we call [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt).
+
+It's not too different from the last function we used.
+We pass a list of (key,value) pairs in,
+with a 0 key to signal the final entry.
+
+The wrapper for this should look familiar, it's the same basic idea:
+```rust
+/// Arranges the data for calling a [`wglCreateContextAttribsARB_t`] procedure.
+///
+/// * The input slice consists of [key, value] pairs.
+/// * The input slice **can** be empty.
+/// * Any non-empty input must have zero as the key value of the last position.
+pub unsafe fn do_wglCreateContextAttribsARB(
+  f: wglCreateContextAttribsARB_t, hdc: HDC, hShareContext: HGLRC,
+  attribList: &[[i32; 2]],
+) -> Result<HGLRC, Win32Error> {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match attribList.last() {
+    Some([k, _v]) => {
+      if *k == 0 {
+        attribList.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let hglrc = (f.ok_or(app_err)?)(hdc, hShareContext, i_ptr.cast());
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+```
+
+And this time we don't even have to use a vec to store all our settings.
+We don't have a dynamic number of settings, so a plain array will do fine.
+```rust
+  // now we create a context.
+  const FLAGS: c_int = WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+    | if cfg!(debug_assertions) { WGL_CONTEXT_DEBUG_BIT_ARB } else { 0 };
+  let hglrc = unsafe {
+    do_wglCreateContextAttribsARB(
+      wglCreateContextAttribsARB,
+      hdc,
+      null_mut(),
+      &[
+        [WGL_CONTEXT_MAJOR_VERSION_ARB, 3],
+        [WGL_CONTEXT_MINOR_VERSION_ARB, 3],
+        [WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB],
+        [WGL_CONTEXT_FLAGS_ARB, FLAGS],
+        [0, 0],
+      ],
+    )
+  }
+  .unwrap();
+  unsafe { wgl_make_current(hdc, hglrc) }.unwrap();
+  unsafe { (*lparam).hglrc = hglrc };
+```
+
+I'm here selecting OpenGL 3.3 Core,
+because some day,
+when this tutorial is finally over,
+I'm going to say,
+"and now you can learn how to do the rest of OpenGL by going over to [LearnOpenGL.com](https://LearnOpenGL.com)!".
+And they teach 3.3 Core.
+If you don't yet know about OpenGL versions,
+that's the oldest version of the "newer" set of OpenGL versions.
+If you do know enough about OpenGL to have an opinion on what other version to use,
+you could also use any other version as well.
+
+## LoadLibraryW
+
+On both MSDN and the OpenGL Wiki it says that any function that's in `OpenGL32.dll`
+is *not* able to be looked up with `wglGetProcAddress`.
+Instead you have to use the [GetProcAddress](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress) function.
+To use that, we need to have a loaded library.
+The library loading itself uses a textual name, so it has `A` and `W` versions.
+As usual, we want the `W` version, so we want [LoadLibraryW](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw).
+When we're all done with the library we'll use [FreeLibrary](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary)
+to close out the library.
+The `FreeLibrary` call just takes the handle to the module, so it doesn't have `A` and `W` variants.
+
+```rust
+/// Pointer to a procedure of unknown type.
+pub type FARPROC = *mut c_void;
+
+#[link(name = "Kernel32")]
+extern "system" {
+  /// [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+  pub fn LoadLibraryW(lpLibFileName: LPCWSTR) -> HMODULE;
+
+  /// [`FreeLibrary`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary)
+  pub fn FreeLibrary(hLibModule: HMODULE) -> BOOL;
+
+  /// [`GetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress)
+  pub fn GetProcAddress(hModule: HMODULE, lpProcName: LPCSTR) -> FARPROC;
+}
+
+/// Loads a dynamic library.
+///
+/// The precise details of how the library is searched for depend on the input
+/// string.
+///
+/// See [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+pub fn load_library(name: &str) -> Result<HMODULE, Win32Error> {
+  let name_null = wide_null(name);
+  // Safety: the input pointer is to a null-terminated string
+  let hmodule = unsafe { LoadLibraryW(name_null.as_ptr()) };
+  if hmodule.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hmodule)
+  }
+}
+```
+
+Also, if you're wondering why `GetProcAddress` doesn't have `A` and `W` versions,
+it's because C function names can only ever be ANSI content.
+
+Now we can put an `HMODULE` into our WindowData struct.
+
+```rust
+struct WindowData {
+  hdc: HDC,
+  hglrc: HGLRC,
+  opengl32: HMODULE,
+}
+```
+
+Then we can load a module and assign it.
+We can do this basically anywhere in the startup process,
+but it's emotionally connected to using GL,
+so we'll do it right after we make our context.
+
+```rust
+  unsafe { wgl_make_current(hdc, hglrc) }.unwrap();
+  unsafe { (*lparam).hglrc = hglrc };
+
+  let opengl32 = load_library("opengl32.dll").unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+```
+
+And we have to properly close out the module when we're cleaning up the window.
+
+```rust
+    WM_DESTROY => {
+      println!("WM_DESTROY");
+      match get_window_userdata::<WindowData>(hwnd) {
+        Ok(ptr) if !ptr.is_null() => {
+          let window_data = Box::from_raw(ptr);
+          FreeLibrary(window_data.opengl32);
+          wgl_delete_context(window_data.hglrc)
+            .unwrap_or_else(|e| eprintln!("GL Context deletion error: {}", e));
+          // ...
+```
+
+## What Do We Load?
+
+Now that we can load up GL functions, what do we want to load?
+And what are the type signatures?
+
+Well, for that, we could look at our old friend [gl.xml](https://github.com/KhronosGroup/OpenGL-Registry/blob/master/xml/gl.xml).
+It describes the entire GL API in a structured way.
+
+However, that's overkill for what we need at the moment.
+We only need to use like two functions to just clear the screen to a color,
+so instead we'll just check the online manual pages.
+What we're after for is [glClearColor](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClearColor.xhtml)
+and also [glClear](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClear.xhtml).
+
+What's a GLfloat and a GLbitfield? For that we can look in `gl.xml`.
+If we look around we'll eventually find these entries:
+```xml
+<type>typedef unsigned int <name>GLbitfield</name>;</type>
+
+<type requires="khrplatform">typedef khronos_float_t <name>GLfloat</name>;</type>
+```
+
+Cool.
+Hmm, we need a new library module for this.
+These definitions will be common to our GL usage across all the platforms,
+so let's start a new file for that.
+
+```rust
+// lib.rs
+
+//! Library for the [Triangle From Scratch][tfs] project.
+//!
+//! [tfs]: https://rust-tutorials.github.io/triangle-from-scratch/
+
+mod macros;
+
+pub mod util;
+
+#[cfg(windows)]
+pub mod win32;
+// this is so that gl will see the C types
+#[cfg(windows)]
+use win32::*;
+
+pub mod gl;
+```
+
+And then our fun new module
+```rust
+#![allow(non_camel_case_types)]
+
+use super::*;
+
+/// From `gl.xml`
+pub type GLbitfield = c_uint;
+
+/// From `gl.xml`
+pub type GLfloat = c_float;
+
+/// See [`glClearColor`](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClearColor.xhtml)
+pub type glClearColor_t = Option<
+  unsafe extern "system" fn(
+    red: GLfloat,
+    green: GLfloat,
+    blue: GLfloat,
+    alpha: GLfloat,
+  ),
+>;
+
+/// See [`glClear`](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClear.xhtml)
+pub type glClear_t = Option<unsafe extern "system" fn(mask: GLbitfield)>;
+```
+
+Hmm, but where do we get the values for the `GL_COLOR_BUFFER_BIT` and so on?
+That's also stored in `gl.xml`.
+
+If you search for `GL_COLOR_BUFFER_BIT` you'll see a lot of "group" info,
+but that's old and not what we want.
+Eventually if you keep looking you'll see a line like this:
+```xml
+<enum value="0x00004000" name="GL_COLOR_BUFFER_BIT" group="ClearBufferMask,AttribMask"/>
+```
+This is good, this is good.
+
+So what are the groups?
+Well, there's been a heroic effort by the GL maintainers to get the `gl.xml` descriptions
+of functions to be *slightly* better documented by giving each function input a group,
+and then each constant lists what groups it's in.
+
+If we look at the XML definition for `glClear`:
+```xml
+<command>
+  <proto>void <name>glClear</name></proto>
+  <param group="ClearBufferMask"><ptype>GLbitfield</ptype> <name>mask</name></param>
+  <glx type="render" opcode="127"/>
+</command>
+```
+See, that mask argument should be a constant in the "ClearBufferMask" group.
+And `GL_COLOR_BUFFER_BIT` is in the "ClearBufferMask" group,
+so it would be a correct call to make.
+
+This is just some info to try and help static checkers,
+but it's still pretty loosey-goosey,
+and you don't really have to pay much attention if you don't care to.
+We won't be following the group info while we're doing this by hand.
+If we make a fancy generator then that might care to track the group info.
+
+So we add some fields to our window data:
+```rust
+struct WindowData {
+  hdc: HDC,
+  hglrc: HGLRC,
+  opengl32: HMODULE,
+  gl_clear: glClear_t,
+  gl_clear_color: glClearColor_t,
+}
+```
+
+Then we add some functions to our window data:
+```rust
+impl WindowData {
+  pub fn gl_get_proc_address(&self, name: &[u8]) -> *mut c_void {
+    assert!(*name.last().unwrap() == 0);
+    let p = unsafe { wglGetProcAddress(name.as_ptr().cast()) };
+    match p as usize {
+      0 | 1 | 2 | 3 | usize::MAX => unsafe {
+        GetProcAddress(self.opengl32, name.as_ptr().cast())
+      },
+      _ => p,
+    }
+  }
+  #[rustfmt::skip]
+  pub unsafe fn load_gl_functions(&mut self) {
+    self.gl_clear = core::mem::transmute(self.gl_get_proc_address(c_str!("glClear")));
+    self.gl_clear_color = core::mem::transmute(self.gl_get_proc_address(c_str!("glClearColor")));
+  }
+}
+```
+
+And then, in addition to simply setting the loaded library,
+we also tell the window data to do its loading process:
+```rust
+  let opengl32 = load_library("opengl32.dll").unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+  unsafe { (*lparam).load_gl_functions() };
+```
+
+## Clear The Screen
+
+To clear the screen's color we call `glClear(GL_COLOR_BUFFER_BIT)`.
+We can also set the color we want to clear things to.
+By default it'll clear to black,
+but we can select any color we want.
+
+```rust
+    WM_PAINT => match get_window_userdata::<WindowData>(hwnd) {
+      Ok(ptr) if !ptr.is_null() => {
+        let window_data = ptr.as_mut().unwrap();
+        (window_data.gl_clear_color.unwrap())(0.6, 0.7, 0.8, 1.0);
+        (window_data.gl_clear.unwrap())(GL_COLOR_BUFFER_BIT);
+      }
+```
+
+And there's one more step!
+
+We need to call [SwapBuffers](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers)
+on our HDC to tell windows to swap the front and back buffers.
+
+Declare it.
+```rust
+// in the library's win32.rs
+
+#[link(name = "Gdi32")]
+extern "system" {
+  /// [`SwapBuffers`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers)
+  pub fn SwapBuffers(Arg1: HDC) -> BOOL;
+}
+```
+
+And then call it.
+```rust
+    WM_PAINT => match get_window_userdata::<WindowData>(hwnd) {
+      Ok(ptr) if !ptr.is_null() => {
+        let window_data = ptr.as_mut().unwrap();
+        (window_data.gl_clear_color.unwrap())(0.6, 0.7, 0.8, 1.0);
+        (window_data.gl_clear.unwrap())(GL_COLOR_BUFFER_BIT);
+        SwapBuffers(window_data.hdc);
+      }
+```
+
+And we finally get a nice, soft, blue sort of color in our window.
+
+## Swap Interval
+
+Oh heck, we didn't set a swap interval!
+
+Remember how we loaded up a pointer for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt),
+and then we didn't use it at all?
+Uh, I guess we can call it after we load the GL functions.
+We just need to set it once and it'll stay that way for the rest of the program.
+
+```rust
+  let opengl32 = load_library("opengl32.dll").unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+  unsafe { (*lparam).load_gl_functions() };
+
+  // Enable "adaptive" vsync if possible, otherwise normal vsync
+  if wgl_extensions.iter().any(|s| s == "WGL_EXT_swap_control_tear") {
+    unsafe { (wglSwapIntervalEXT.unwrap())(-1) };
+  } else {
+    unsafe { (wglSwapIntervalEXT.unwrap())(1) };
+  }
+```
+
+Now, any time we call `SwapBuffers`,
+the system will sync the swap with the vertical trace of the screen,
+and it'll wait at least 1 full monitor cycle between each swap.
+
+If we have the adaptive vsync available, it'll still wait at least 1 frame,
+but if we're only slightly off from the correct time, it'll swap immediately.
+This reduces visual stutter by allowing occasional visual tearing.
+Neither of those are great, but sometimes the program will struggle to keep up.
+Usually the vsync mode is a user setting within a game or whatever,
+so you can just let users pick how they want to handle things.
+
+## Are We Done?
+
+Yeah, basically!
+
+You understand the basics of how we find a GL function type,
+lookup the function to load it into the program at runtime,
+and call it to make something happen.
+
+> and now you can learn how to do the rest of OpenGL by going over to [LearnOpenGL.com](https://LearnOpenGL.com)!
+
+I promised I'd say that to you one day.
+
+No, but really, *the basics* have all been explained.
+There's a lot of stuff that's still clunky as heck,
+but it all works.
+
+What's certainly left to do is make it more ergonomic.
+However, we're already at just over 9300 words.
+We might talk about ways to make GL nice to work with in another lesson some day.

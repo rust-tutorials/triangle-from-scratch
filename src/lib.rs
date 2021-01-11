@@ -8,6 +8,10 @@ pub mod util;
 
 #[cfg(windows)]
 pub mod win32;
+#[cfg(windows)]
+use win32::*;
+
+pub mod gl;
 
 /// Gathers up the bytes from a pointer.
 ///

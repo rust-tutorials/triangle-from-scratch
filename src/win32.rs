@@ -64,39 +64,8 @@ pub type wchar_t = u16;
 pub type WORD = c_ushort;
 pub type WPARAM = UINT_PTR;
 pub type HLOCAL = HANDLE;
-/// Handle (to a) GL Rendering Context
-pub type HGLRC = HANDLE;
-/// Pointer to an ANSI string.
-pub type LPCSTR = *const c_char;
-/// Pointer to a procedure of unknown type.
-pub type PROC = *mut c_void;
-/// Type for [wglGetExtensionsStringARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
-pub type wglGetExtensionsStringARB_t =
-  Option<unsafe extern "system" fn(HDC) -> *const c_char>;
-/// Type for [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
-pub type wglChoosePixelFormatARB_t = Option<
-  unsafe extern "system" fn(
-    hdc: HDC,
-    piAttribIList: *const c_int,
-    pfAttribFList: *const f32,
-    nMaxFormats: UINT,
-    piFormats: *mut c_int,
-    nNumFormats: *mut UINT,
-  ),
->;
 pub type FLOAT = c_float;
 pub type c_float = f32;
-/// Type for [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
-pub type wglCreateContextAttribsARB_t = Option<
-  unsafe extern "system" fn(
-    hDC: HDC,
-    hShareContext: HGLRC,
-    attribList: *const c_int,
-  ) -> HGLRC,
->;
-/// Type for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
-pub type wglSwapIntervalEXT_t =
-  Option<unsafe extern "system" fn(interval: c_int) -> BOOL>;
 
 pub type WNDPROC = Option<
   unsafe extern "system" fn(
@@ -106,6 +75,47 @@ pub type WNDPROC = Option<
     lParam: LPARAM,
   ) -> LRESULT,
 >;
+
+/// Handle (to a) GL Rendering Context
+pub type HGLRC = HANDLE;
+
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const c_char;
+
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut c_void;
+
+/// Pointer to a procedure of unknown type.
+pub type FARPROC = *mut c_void;
+
+/// Type for [wglGetExtensionsStringARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
+pub type wglGetExtensionsStringARB_t =
+  Option<unsafe extern "system" fn(HDC) -> *const c_char>;
+
+/// Type for [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub type wglChoosePixelFormatARB_t = Option<
+  unsafe extern "system" fn(
+    hdc: HDC,
+    piAttribIList: *const c_int,
+    pfAttribFList: *const f32,
+    nMaxFormats: UINT,
+    piFormats: *mut c_int,
+    nNumFormats: *mut UINT,
+  ) -> BOOL,
+>;
+
+/// Type for [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub type wglCreateContextAttribsARB_t = Option<
+  unsafe extern "system" fn(
+    hDC: HDC,
+    hShareContext: HGLRC,
+    attribList: *const c_int,
+  ) -> HGLRC,
+>;
+
+/// Type for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
+pub type wglSwapIntervalEXT_t =
+  Option<unsafe extern "system" fn(interval: c_int) -> BOOL>;
 
 /// See [`WNDCLASSW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw)
 #[repr(C)]
@@ -386,6 +396,150 @@ pub const PFD_DOUBLEBUFFER_DONTCARE: u32 = 0x40000000;
 /// use with [`ChoosePixelFormat`] only
 pub const PFD_STEREO_DONTCARE: u32 = 0x80000000;
 
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NUMBER_PIXEL_FORMATS_ARB: c_int = 0x2000;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_DRAW_TO_BITMAP_ARB: c_int = 0x2002;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCELERATION_ARB: c_int = 0x2003;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NEED_PALETTE_ARB: c_int = 0x2004;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NEED_SYSTEM_PALETTE_ARB: c_int = 0x2005;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SWAP_LAYER_BUFFERS_ARB: c_int = 0x2006;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SWAP_METHOD_ARB: c_int = 0x2007;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NUMBER_OVERLAYS_ARB: c_int = 0x2008;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NUMBER_UNDERLAYS_ARB: c_int = 0x2009;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_ARB: c_int = 0x200A;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_RED_VALUE_ARB: c_int = 0x2037;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_GREEN_VALUE_ARB: c_int = 0x2038;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_BLUE_VALUE_ARB: c_int = 0x2039;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_ALPHA_VALUE_ARB: c_int = 0x203A;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TRANSPARENT_INDEX_VALUE_ARB: c_int = 0x203B;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SHARE_DEPTH_ARB: c_int = 0x200C;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SHARE_STENCIL_ARB: c_int = 0x200D;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SHARE_ACCUM_ARB: c_int = 0x200E;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SUPPORT_GDI_ARB: c_int = 0x200F;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_DOUBLE_BUFFER_ARB: c_int = 0x2011;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_STEREO_ARB: c_int = 0x2012;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_PIXEL_TYPE_ARB: c_int = 0x2013;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_COLOR_BITS_ARB: c_int = 0x2014;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_RED_BITS_ARB: c_int = 0x2015;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_RED_SHIFT_ARB: c_int = 0x2016;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_GREEN_BITS_ARB: c_int = 0x2017;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_GREEN_SHIFT_ARB: c_int = 0x2018;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_BLUE_BITS_ARB: c_int = 0x2019;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_BLUE_SHIFT_ARB: c_int = 0x201A;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ALPHA_BITS_ARB: c_int = 0x201B;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ALPHA_SHIFT_ARB: c_int = 0x201C;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCUM_BITS_ARB: c_int = 0x201D;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCUM_RED_BITS_ARB: c_int = 0x201E;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCUM_GREEN_BITS_ARB: c_int = 0x201F;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCUM_BLUE_BITS_ARB: c_int = 0x2020;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_ACCUM_ALPHA_BITS_ARB: c_int = 0x2021;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_DEPTH_BITS_ARB: c_int = 0x2022;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_STENCIL_BITS_ARB: c_int = 0x2023;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_AUX_BUFFERS_ARB: c_int = 0x2024;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_NO_ACCELERATION_ARB: c_int = 0x2025;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_GENERIC_ACCELERATION_ARB: c_int = 0x2026;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_FULL_ACCELERATION_ARB: c_int = 0x2027;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SWAP_EXCHANGE_ARB: c_int = 0x2028;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SWAP_COPY_ARB: c_int = 0x2029;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_SWAP_UNDEFINED_ARB: c_int = 0x202A;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TYPE_RGBA_ARB: c_int = 0x202B;
+/// Defined in [WGL_ARB_pixel_format](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub const WGL_TYPE_COLORINDEX_ARB: c_int = 0x202C;
+
+/// Defined in [EXT_framebuffer_sRGB](https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_framebuffer_sRGB.txt)
+pub const WGL_FRAMEBUFFER_SRGB_CAPABLE_EXT: c_int = 0x20A9;
+
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const WGL_SAMPLE_BUFFERS_ARB: c_int = 0x2041;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const WGL_SAMPLES_ARB: c_int = 0x2042;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const MULTISAMPLE_ARB: c_int = 0x809D;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_ALPHA_TO_COVERAGE_ARB: c_int = 0x809E;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_ALPHA_TO_ONE_ARB: c_int = 0x809F;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_COVERAGE_ARB: c_int = 0x80A0;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const MULTISAMPLE_BIT_ARB: c_int = 0x20000000;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_BUFFERS_ARB: c_int = 0x80A8;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLES_ARB: c_int = 0x80A9;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_COVERAGE_VALUE_ARB: c_int = 0x80AA;
+/// Defined in [ARB_multisample](https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt)
+pub const SAMPLE_COVERAGE_INVERT_ARB: c_int = 0x80AB;
+
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_MAJOR_VERSION_ARB: c_int = 0x2091;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_MINOR_VERSION_ARB: c_int = 0x2092;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_LAYER_PLANE_ARB: c_int = 0x2093;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_FLAGS_ARB: c_int = 0x2094;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_PROFILE_MASK_ARB: c_int = 0x9126;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_DEBUG_BIT_ARB: c_int = 0x0001;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB: c_int = 0x0002;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_CORE_PROFILE_BIT_ARB: c_int = 0x00000001;
+/// Defined in [WGL_ARB_create_context](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub const WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB: c_int = 0x00000002;
+
 #[link(name = "Kernel32")]
 extern "system" {
   /// [`GetModuleHandleW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew)
@@ -405,6 +559,15 @@ extern "system" {
 
   /// [`LocalFree`](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-localfree)
   pub fn LocalFree(hMem: HLOCAL) -> HLOCAL;
+
+  /// [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+  pub fn LoadLibraryW(lpLibFileName: LPCWSTR) -> HMODULE;
+
+  /// [`FreeLibrary`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary)
+  pub fn FreeLibrary(hLibModule: HMODULE) -> BOOL;
+
+  /// [`GetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress)
+  pub fn GetProcAddress(hModule: HMODULE, lpProcName: LPCSTR) -> FARPROC;
 }
 
 #[link(name = "User32")]
@@ -499,6 +662,9 @@ extern "system" {
   pub fn SetPixelFormat(
     hdc: HDC, format: c_int, ppfd: *const PIXELFORMATDESCRIPTOR,
   ) -> BOOL;
+
+  /// [`SwapBuffers`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers)
+  pub fn SwapBuffers(Arg1: HDC) -> BOOL;
 }
 
 #[link(name = "Opengl32")]
@@ -1164,8 +1330,7 @@ pub unsafe fn wgl_get_extension_string_arb(
     wgl_get_proc_address(c_str!("wglGetExtensionsStringARB"))?,
   );
   let p: *const u8 =
-    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT)).unwrap())(hdc)
-      .cast();
+    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT))?)(hdc).cast();
   if p.is_null() {
     Err(get_last_error())
   } else {
@@ -1174,6 +1339,7 @@ pub unsafe fn wgl_get_extension_string_arb(
   }
 }
 
+/// Grabs out the stuff you'll need to have fun with WGL.
 pub fn get_wgl_basics() -> Result<
   (
     Vec<String>,
@@ -1275,4 +1441,97 @@ pub fn get_wgl_basics() -> Result<
     create_context_attribs,
     swap_interval,
   ))
+}
+
+/// Arranges the data for calling a [`wglChoosePixelFormatARB_t`] procedure.
+///
+/// * Inputs are slices of [key, value] pairs.
+/// * Input slices **can** be empty.
+/// * Non-empty slices must have a zero value in the key position of the final
+///   pair.
+pub unsafe fn do_wglChoosePixelFormatARB(
+  f: wglChoosePixelFormatARB_t, hdc: HDC, int_attrs: &[[c_int; 2]],
+  float_attrs: &[[FLOAT; 2]],
+) -> Result<c_int, Win32Error> {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match int_attrs.last() {
+    Some([k, _v]) => {
+      if *k == 0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let f_ptr = match float_attrs.last() {
+    Some([k, _v]) => {
+      if *k == 0.0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let mut out_format = 0;
+  let mut out_format_count = 0;
+  let b = (f.ok_or(app_err)?)(
+    hdc,
+    i_ptr.cast(),
+    f_ptr.cast(),
+    1,
+    &mut out_format,
+    &mut out_format_count,
+  );
+  if b != 0 && out_format_count == 1 {
+    Ok(out_format)
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Arranges the data for calling a [`wglCreateContextAttribsARB_t`] procedure.
+///
+/// * The input slice consists of [key, value] pairs.
+/// * The input slice **can** be empty.
+/// * Any non-empty input must have zero as the key value of the last position.
+pub unsafe fn do_wglCreateContextAttribsARB(
+  f: wglCreateContextAttribsARB_t, hdc: HDC, hShareContext: HGLRC,
+  attribList: &[[i32; 2]],
+) -> Result<HGLRC, Win32Error> {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match attribList.last() {
+    Some([k, _v]) => {
+      if *k == 0 {
+        attribList.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None => null(),
+  };
+  let hglrc = (f.ok_or(app_err)?)(hdc, hShareContext, i_ptr.cast());
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+
+/// Loads a dynamic library.
+///
+/// The precise details of how the library is searched for depend on the input
+/// string.
+///
+/// See [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+pub fn load_library(name: &str) -> Result<HMODULE, Win32Error> {
+  let name_null = wide_null(name);
+  // Safety: the input pointer is to a null-terminated string
+  let hmodule = unsafe { LoadLibraryW(name_null.as_ptr()) };
+  if hmodule.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hmodule)
+  }
 }
