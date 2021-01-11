@@ -1312,3 +1312,20 @@ Alright, I think we're done with all this fake context stuff.
 We can move on to setting up our real context.
 
 Actually, let's briefly put all that stuff into a single library function.
+```rust
+pub fn get_wgl_basics() -> Result<
+  (
+    Vec<String>,
+    wglChoosePixelFormatARB_t,
+    wglCreateContextAttribsARB_t,
+    wglSwapIntervalEXT_t,
+  ),
+  Win32Error,
+> {
+  // ...
+}
+```
+
+It's just moving all the stuff you've seen over,
+and then putting in a lot of drop guard types like we saw in format message.
+There's not much new to talk about, so we'll keep moving.
