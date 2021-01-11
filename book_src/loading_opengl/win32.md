@@ -802,4 +802,513 @@ pub unsafe fn unregister_class_by_atom(
 }
 ```
 
-TODO: debug for Win32Error
+And here's another thing that went wrong when I tried to figure this "window doesn't show up" problem.
+At one point I was registering the same class twice,
+because my `fake_wc` had the same name string as the "real" `wc`.
+Then I got this error:
+
+```
+D:\dev\triangle-from-scratch>cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.73s
+     Running `target\debug\triangle-from-scratch.exe`        
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Win32Error(1410)', src\main.rs:63:46
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+```
+
+Not helpful!
+Error 1410, what on Earth does that mean?
+So we should adjust the error lookups to happen in `Debug` as well as `Display`.
+
+```rust
+#[repr(transparent)]
+pub struct Win32Error(pub DWORD);
+impl std::error::Error for Win32Error {}
+
+impl core::fmt::Debug for Win32Error {
+  /// Displays the error using `FormatMessageW`
+  ///
+  /// ```
+  /// use triangle_from_scratch::win32::*;
+  /// let s = format!("{:?}", Win32Error(0));
+  /// assert_eq!("The operation completed successfully.  ", s);
+  /// let app_error = format!("{:?}", Win32Error(1 << 29));
+  /// assert_eq!("Win32ApplicationError(536870912)", app_error);
+  /// ```
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    // everything from before
+  }
+}
+impl core::fmt::Display for Win32Error {
+  /// Same as `Debug` impl
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+```
+
+But what if you *really wanted that error number*.
+Well, maybe you do, and for that, we can use the "alternate" flag.
+
+```rust
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    // ...
+    if f.alternate() {
+      return write!(f, "Win32Error({})", self.0);
+    }
+```
+
+Now if you format with "{:?}" (which is what `unwrap` uses)
+then you get the message form,
+and if you really want to see the number you can format with "{:#?}".
+
+Now when an `unwrap` goes bad it looks like this:
+```
+D:\dev\triangle-from-scratch>cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.87s
+     Running `target\debug\triangle-from-scratch.exe`
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Class already exists.  ', src\main.rs:63:46
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+```
+Ah, look, the class already existed, of course!
+
+So finally we can set a pixel format on a fake window,
+and then clean it all up,
+and then make our real window.
+
+## wglCreateContext
+
+As fun as it is to make a fake window and do not much with it and then throw it away,
+it might be even better if we did something with it.
+
+The point of all this is that we *want* to be able to create an OpenGL context with the latest version,
+and other advanced features.
+However, Windows only lets you directly make an OpenGL 1.1 context.
+To make a context with a newer version than that, you need to use an extension.
+To use an extension, you need to check the extension string to see what extensions are available.
+To check the extension string, you need to have a current OpenGL context.
+
+What we do is we use our fake window to make a fake GL context,
+which will be for the old OpenGL 1.1,
+then we can get the extension string to check what extensions are available.
+This lets us use the "advanced" capabilities like "making a context with a modern API version".
+
+I told you at the start that this was gonna seem silly when I explained what was going on.
+[I warned you about stairs bro!](http://www.mspaintadventures.com/sweetbroandhellajeff/)
+
+Anyway, once we've gotten the info we need from the fake context then we close it,
+and we close out all the other "fake" stuff,
+and then we make the "real" stuff.
+
+That means our next step is [wglCreateContext](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext),
+and also the inverse, [wglDeleteContext](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext).
+
+```rust
+/// Handle (to a) GL Rendering Context
+pub type HGLRC = HANDLE;
+
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+  pub fn wglCreateContext(Arg1: HDC) -> HGLRC;
+
+  /// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+  pub fn wglDeleteContext(Arg1: HGLRC) -> BOOL;
+}
+
+/// See [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+pub unsafe fn wgl_create_context(hdc: HDC) -> Result<HGLRC, Win32Error> {
+  let hglrc = wglCreateContext(hdc);
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+
+/// Deletes a GL Context.
+///
+/// * You **cannot** use this to delete a context current in another thread.
+/// * You **can** use this to delete the current thread's context. The context
+///   will be made not-current automatically before it is deleted.
+///
+/// See
+/// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+pub unsafe fn wgl_delete_context(hglrc: HGLRC) -> Result<(), Win32Error> {
+  let success = wglDeleteContext(hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+
+And then in `main`:
+```rust
+  unsafe { set_pixel_format(fake_hdc, pf_index, &pfd) }.unwrap();
+  let fake_hglrc = unsafe { wgl_create_context(fake_hdc) }.unwrap();
+
+  // TODO: work with the fake context.
+
+  // cleanup the fake stuff
+  unsafe { wgl_delete_context(fake_hglrc) }.unwrap();
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+  unsafe { unregister_class_by_atom(fake_atom, instance) }.unwrap();
+```
+
+## wglMakeCurrent
+
+It's no use making and destroying this fake context if we don't make it current:
+```rust
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+  pub fn wglMakeCurrent(hdc: HDC, hglrc: HGLRC) -> BOOL;
+}
+
+/// Makes a given HGLRC current in the thread and targets it at the HDC given.
+///
+/// * You can safely pass `null_mut` for both parameters if you wish to make no
+///   context current in the thread.
+///
+/// See
+/// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+pub unsafe fn wgl_make_current(
+  hdc: HDC, hglrc: HGLRC,
+) -> Result<(), Win32Error> {
+  let success = wglMakeCurrent(hdc, hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+```
+
+Before we can use the context we have to make it current,
+and before we destroy it we have to make it not be current.
+On Windows we don't *have* to make it not-current,
+but it's just good habit because on *other* systems you must make a context not-current before you destroy it.
+
+```rust
+  let fake_hglrc = unsafe { wgl_create_context(fake_hdc) }.unwrap();
+  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  // TODO: work with the fake context.
+
+  // cleanup the fake stuff
+  unsafe { wgl_make_current(null_mut(), null_mut()) }.unwrap();
+  unsafe { wgl_delete_context(fake_hglrc) }.unwrap();
+```
+
+## wglGetProcAddress
+
+This is what we've been after the whole time!
+
+```rust
+// macros.rs
+
+/// Turns a rust string literal into a null-terminated `&[u8]`.
+#[macro_export]
+macro_rules! c_str {
+  ($text:expr) => {{
+    concat!($text, '\0').as_bytes()
+  }};
+}
+
+// win32.rs
+
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const c_char;
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut c_void;
+
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
+  pub fn wglGetProcAddress(Arg1: LPCSTR) -> PROC;
+}
+
+/// Gets a GL function address.
+///
+/// The input should be a null-terminated function name string. Use the
+/// [`c_str!`] macro for assistance.
+///
+/// * You must have an active GL context for this to work. Otherwise you will
+///   always get an error.
+/// * The function name is case sensitive, and spelling must be exact.
+/// * All outputs are context specific. Functions supported in one rendering
+///   context are not necessarily supported in another.
+/// * The extension function addresses are unique for each pixel format. All
+///   rendering contexts of a given pixel format share the same extension
+///   function addresses.
+///
+/// This *will not* return function pointers exported by `OpenGL32.dll`, meaning
+/// that it won't return OpenGL 1.1 functions. For those old function, use
+/// [`GetProcAddress`].
+pub fn wgl_get_proc_address(func_name: &[u8]) -> Result<PROC, Win32Error> {
+  // check that we end the slice with a \0 as expected.
+  match func_name.last() {
+    Some(b'\0') => (),
+    _ => return Err(Win32Error(Win32Error::APPLICATION_ERROR_BIT)),
+  }
+  // Safety: we've checked that the end of the slice is null-terminated.
+  let proc = unsafe { wglGetProcAddress(func_name.as_ptr().cast()) };
+  match proc as usize {
+    // Some non-zero values can also be errors,
+    // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows
+    0 | 1 | 2 | 3 | usize::MAX => return Err(get_last_error()),
+    _ => Ok(proc),
+  }
+}
+```
+
+This part is pretty simple.
+We get a value back, and on success it's a pointer to a function.
+We'll have to use [transmute](https://doc.rust-lang.org/core/mem/fn.transmute.html)
+to change the type into the proper function type,
+but that's a concern for the caller to deal with.
+
+## wglGetExtensionsStringARB
+
+Okay, now we can get function pointers.
+This lets us check for [platform specific extensions](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows_2)
+using the [wglGetExtensionsStringARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt) function.
+
+For this, we'll want a helper macro to make C-style string literals for us:
+```rust
+/// Turns a rust string literal into a null-terminated `&[u8]`.
+#[macro_export]
+macro_rules! c_str {
+  ($text:expr) => {{
+    concat!($text, '\0').as_bytes()
+  }};
+}
+```
+
+And then we:
+* lookup the function
+* call the function
+* get the info from the string pointer we get back
+
+This part is kinda *a lot* when you just write it all inline in `main`:
+```rust
+  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  #[allow(non_camel_case_types)]
+  type wglGetExtensionsStringARB_t =
+    unsafe extern "system" fn(HDC) -> *const c_char;
+  let wgl_get_extension_string_arb: Option<wglGetExtensionsStringARB_t> = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!("wglGetExtensionsStringARB")).unwrap(),
+    )
+  };
+  let mut extension_string: *const u8 =
+    unsafe { (wgl_get_extension_string_arb.unwrap())(fake_hdc) }.cast();
+  assert!(!extension_string.is_null());
+  let mut s = String::new();
+  unsafe {
+    while *extension_string != 0 {
+      s.push(*extension_string as char);
+      extension_string = extension_string.add(1);
+    }
+  }
+  println!("> Extension String: {}", s);
+
+  // cleanup the fake stuff
+```
+
+but if we break it down it's not so bad.
+First let's put a function for gathering up a null-terminated byte string into our library.
+This isn't Win32 specific, so we'll put it in `lib.rs`:
+```rust
+/// Gathers up the bytes from a pointer.
+///
+/// The byte sequence must be null-terminated.
+///
+/// The output excludes the null byte.
+pub unsafe fn gather_null_terminated_bytes(mut p: *const u8) -> Vec<u8> {
+  let mut v = vec![];
+  while *p != 0 {
+    v.push(*p);
+    p = p.add(1);
+  }
+  v
+}
+```
+
+Now that we have a `Vec<u8>` we want a `String`.
+We can use [String::from_utf8](https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8),
+but that returns a Result (it fails if the bytes aren't valid utf8).
+There's also [String::from_utf8_lossy](https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8_lossy),
+but if the bytes *are* valid utf8 then we get a borrow on our vec and we'd have to clone it to get the `String`.
+What we *want* is to move the Vec if we can, and only allocate a new Vec if we must.
+You'd think that this is a completely common thing to want,
+but for whatever reason it's not in the standard library.
+
+```rust
+// PS: naming is hard :(
+
+/// Converts a `Vec<u8>` into a `String` using the minimum amount of
+/// re-allocation.
+pub fn min_alloc_lossy_into_string(bytes: Vec<u8>) -> String {
+  match String::from_utf8(bytes) {
+    Ok(s) => s,
+    Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
+  }
+}
+```
+
+Now in `win32.rs` we'll just `use super::*;` and make a function to get the extension string:
+```rust
+/// Gets the WGL extension string for the HDC passed.
+///
+/// * This relies on [`wgl_get_proc_address`], and so you must have a context
+///   current for it to work.
+/// * If `wgl_get_proc_address` fails then an Application Error is generated.
+/// * If `wgl_get_proc_address` succeeds but the extension string can't be
+///   obtained for some other reason you'll get a System Error.
+///
+/// The output is a space-separated list of extensions that are supported.
+///
+/// See
+/// [`wglGetExtensionsStringARB`](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
+pub unsafe fn wgl_get_extension_string_arb(
+  hdc: HDC,
+) -> Result<String, Win32Error> {
+  let f: wglGetExtensionsStringARB_t = core::mem::transmute(
+    wgl_get_proc_address(c_str!("wglGetExtensionsStringARB"))?,
+  );
+  let p: *const u8 =
+    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT)).unwrap())(hdc)
+      .cast();
+  if p.is_null() {
+    Err(get_last_error())
+  } else {
+    let bytes = gather_null_terminated_bytes(p);
+    Ok(min_alloc_lossy_into_string(bytes))
+  }
+}
+```
+
+And now we can try to get the extension string with a single call to that:
+```rust
+// main.rs: fn main
+  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  let res = unsafe { wgl_get_extension_string_arb(fake_hdc) };
+  println!("> Extension String Result: {:?}", res);
+
+  // cleanup the fake stuff
+```
+
+And with a little iterator magic:
+```rust
+  let extensions: Vec<String> =
+    unsafe { wgl_get_extension_string_arb(fake_hdc) }
+      .map(|s| {
+        s.split(' ').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect()
+      })
+      .unwrap_or(Vec::new());
+  println!("> Extensions: {:?}", extensions);
+```
+
+Which prints out alright:
+```
+D:\dev\triangle-from-scratch>cargo run
+    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target\debug\triangle-from-scratch.exe`        
+> Got Pixel Format: PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+> Extensions: ["WGL_ARB_buffer_region", "WGL_ARB_create_context", "WGL_ARB_create_context_no_error", "WGL_ARB_create_context_profile", "WGL_ARB_create_context_robustness", "WGL_ARB_context_flush_control", "WGL_ARB_extensions_string", "WGL_ARB_make_current_read", "WGL_ARB_multisample", "WGL_ARB_pbuffer", "WGL_ARB_pixel_format", "WGL_ARB_pixel_format_float", "WGL_ARB_render_texture", "WGL_ATI_pixel_format_float", "WGL_EXT_colorspace", "WGL_EXT_create_context_es_profile", "WGL_EXT_create_context_es2_profile", "WGL_EXT_extensions_string", "WGL_EXT_framebuffer_sRGB", "WGL_EXT_pixel_format_packed_float", "WGL_EXT_swap_control", "WGL_EXT_swap_control_tear", "WGL_NVX_DX_interop", "WGL_NV_DX_interop", "WGL_NV_DX_interop2", "WGL_NV_copy_image", "WGL_NV_delay_before_swap", "WGL_NV_float_buffer", "WGL_NV_multisample_coverage", "WGL_NV_render_depth_texture", "WGL_NV_render_texture_rectangle"]
+```
+
+## Grab Some Function Pointers
+
+Now that we can see what WGL extensions are available,
+we can grab out some function pointers.
+
+Here's the key part:
+*We don't call them yet.*
+
+This is another silly thing, but it's true.
+We just get the function pointers for now.
+Then we destroy the fake stuff,
+then we use the function pointers that we stored to make our real stuff.
+
+We want to get function pointers for:
+* [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+  (provided by `WGL_ARB_pixel_format`) is required to choose advanced pixel formats (such as multisampling).
+* [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+  (provided by `WGL_ARB_create_context`) is required to make GL contexts with API versions above 1.1.
+* [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
+  (provided by `WGL_EXT_swap_control`) is *not* required but is very handy, because it lets you enable
+  [vsync](https://en.wikipedia.org/wiki/Screen_tearing#Vertical_synchronization)
+
+These are our core three extension functions.
+Many of the extensions listed above don't add new functions,
+they just extend what values you can send to these three.
+
+First we declare the types we'll be using:
+```rust
+// lib.rs
+
+/// Type for [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub type wglChoosePixelFormatARB_t = Option<
+  unsafe extern "system" fn(
+    hdc: HDC,
+    piAttribIList: *const c_int,
+    pfAttribFList: *const f32,
+    nMaxFormats: UINT,
+    piFormats: *mut c_int,
+    nNumFormats: *mut UINT,
+  ),
+>;
+pub type FLOAT = c_float;
+pub type c_float = f32;
+/// Type for [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub type wglCreateContextAttribsARB_t = Option<
+  unsafe extern "system" fn(
+    hDC: HDC,
+    hShareContext: HGLRC,
+    attribList: *const c_int,
+  ) -> HGLRC,
+>;
+/// Type for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
+pub type wglSwapIntervalEXT_t =
+  Option<unsafe extern "system" fn(interval: c_int) -> BOOL>;
+```
+
+And then we store the function pointers:
+```rust
+  println!("> Extensions: {:?}", extensions);
+
+  let wglChoosePixelFormatARB: wglChoosePixelFormatARB_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!("wglChoosePixelFormatARB")).unwrap(),
+    )
+  };
+  let wglCreateContextAttribsARB: wglCreateContextAttribsARB_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!("wglCreateContextAttribsARB")).unwrap(),
+    )
+  };
+  let wglSwapIntervalEXT: wglSwapIntervalEXT_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!("wglSwapIntervalEXT")).unwrap(),
+    )
+  };
+
+  // cleanup the fake stuff
+```
+
+Alright, I think we're done with all this fake context stuff.
+We can move on to setting up our real context.
+
+Actually, let's briefly put all that stuff into a single library function.

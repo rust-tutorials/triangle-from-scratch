@@ -26,7 +26,8 @@ that we just found...
 To summarize the opening portion:
 * Every window needs a window class.
 * A window class is registered with the OS at runtime.
-* We need to fill in a [WNDCLASSA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa) (or [WNDCLASSW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw))
+* We need to fill in a [WNDCLASSA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa)
+  (or [WNDCLASSW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw))
 
 Whoa, slow down, hold on, what's this structure thing? And why are there two versions?
 

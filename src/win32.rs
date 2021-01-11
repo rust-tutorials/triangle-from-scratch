@@ -11,6 +11,8 @@ use core::{
   ptr::{null, null_mut},
 };
 
+use crate::*;
+
 macro_rules! unsafe_impl_default_zeroed {
   ($t:ty) => {
     impl Default for $t {
@@ -62,6 +64,39 @@ pub type wchar_t = u16;
 pub type WORD = c_ushort;
 pub type WPARAM = UINT_PTR;
 pub type HLOCAL = HANDLE;
+/// Handle (to a) GL Rendering Context
+pub type HGLRC = HANDLE;
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const c_char;
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut c_void;
+/// Type for [wglGetExtensionsStringARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
+pub type wglGetExtensionsStringARB_t =
+  Option<unsafe extern "system" fn(HDC) -> *const c_char>;
+/// Type for [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub type wglChoosePixelFormatARB_t = Option<
+  unsafe extern "system" fn(
+    hdc: HDC,
+    piAttribIList: *const c_int,
+    pfAttribFList: *const f32,
+    nMaxFormats: UINT,
+    piFormats: *mut c_int,
+    nNumFormats: *mut UINT,
+  ),
+>;
+pub type FLOAT = c_float;
+pub type c_float = f32;
+/// Type for [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub type wglCreateContextAttribsARB_t = Option<
+  unsafe extern "system" fn(
+    hDC: HDC,
+    hShareContext: HGLRC,
+    attribList: *const c_int,
+  ) -> HGLRC,
+>;
+/// Type for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
+pub type wglSwapIntervalEXT_t =
+  Option<unsafe extern "system" fn(interval: c_int) -> BOOL>;
 
 pub type WNDPROC = Option<
   unsafe extern "system" fn(
@@ -466,6 +501,21 @@ extern "system" {
   ) -> BOOL;
 }
 
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+  pub fn wglCreateContext(Arg1: HDC) -> HGLRC;
+
+  /// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+  pub fn wglDeleteContext(Arg1: HGLRC) -> BOOL;
+
+  /// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+  pub fn wglMakeCurrent(hdc: HDC, hglrc: HGLRC) -> BOOL;
+
+  /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
+  pub fn wglGetProcAddress(Arg1: LPCSTR) -> PROC;
+}
+
 /// [`MAKEINTRESOURCEW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-makeintresourcew)
 const fn MAKEINTRESOURCEW(i: WORD) -> LPWSTR {
   i as ULONG_PTR as LPWSTR
@@ -567,6 +617,9 @@ pub fn set_last_error(e: Win32Error) {
 /// If bit 29 is set, it's an application error.
 #[repr(transparent)]
 pub struct Win32Error(pub DWORD);
+impl Win32Error {
+  pub const APPLICATION_ERROR_BIT: DWORD = 1 << 29;
+}
 impl std::error::Error for Win32Error {}
 
 impl core::fmt::Debug for Win32Error {
@@ -574,9 +627,9 @@ impl core::fmt::Debug for Win32Error {
   ///
   /// ```
   /// use triangle_from_scratch::win32::*;
-  /// let s = format!("{}", Win32Error(0));
+  /// let s = format!("{:?}", Win32Error(0));
   /// assert_eq!("The operation completed successfully.  ", s);
-  /// let app_error = format!("{}", Win32Error(1 << 29));
+  /// let app_error = format!("{:?}", Win32Error(1 << 29));
   /// assert_eq!("Win32ApplicationError(536870912)", app_error);
   /// ```
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -588,7 +641,7 @@ impl core::fmt::Debug for Win32Error {
       return write!(f, "Win32Error({})", self.0);
     }
 
-    if self.0 & (1 << 29) > 0 {
+    if self.0 & Self::APPLICATION_ERROR_BIT > 0 {
       return write!(f, "Win32 Application Error ({})", self.0);
     }
     let dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER
@@ -642,6 +695,7 @@ impl core::fmt::Debug for Win32Error {
   }
 }
 impl core::fmt::Display for Win32Error {
+  /// Same as `Debug` impl
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     write!(f, "{:?}", self)
   }
@@ -1011,4 +1065,214 @@ pub unsafe fn unregister_class_by_atom(
   } else {
     Err(get_last_error())
   }
+}
+
+/// See [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+pub unsafe fn wgl_create_context(hdc: HDC) -> Result<HGLRC, Win32Error> {
+  let hglrc = wglCreateContext(hdc);
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+
+/// Deletes a GL Context.
+///
+/// * You **cannot** use this to delete a context current in another thread.
+/// * You **can** use this to delete the current thread's context. The context
+///   will be made not-current automatically before it is deleted.
+///
+/// See
+/// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+pub unsafe fn wgl_delete_context(hglrc: HGLRC) -> Result<(), Win32Error> {
+  let success = wglDeleteContext(hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Makes a given HGLRC current in the thread and targets it at the HDC given.
+///
+/// * You can safely pass `null_mut` for both parameters if you wish to make no
+///   context current in the thread.
+///
+/// See
+/// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+pub unsafe fn wgl_make_current(
+  hdc: HDC, hglrc: HGLRC,
+) -> Result<(), Win32Error> {
+  let success = wglMakeCurrent(hdc, hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Gets a GL function address.
+///
+/// The input should be a null-terminated function name string. Use the
+/// [`c_str!`] macro for assistance.
+///
+/// * You must have an active GL context for this to work. Otherwise you will
+///   always get an error.
+/// * The function name is case sensitive, and spelling must be exact.
+/// * All outputs are context specific. Functions supported in one rendering
+///   context are not necessarily supported in another.
+/// * The extension function addresses are unique for each pixel format. All
+///   rendering contexts of a given pixel format share the same extension
+///   function addresses.
+///
+/// This *will not* return function pointers exported by `OpenGL32.dll`, meaning
+/// that it won't return OpenGL 1.1 functions. For those old function, use
+/// [`GetProcAddress`].
+pub fn wgl_get_proc_address(func_name: &[u8]) -> Result<PROC, Win32Error> {
+  // check that we end the slice with a \0 as expected.
+  match func_name.last() {
+    Some(b'\0') => (),
+    _ => return Err(Win32Error(Win32Error::APPLICATION_ERROR_BIT)),
+  }
+  // Safety: we've checked that the end of the slice is null-terminated.
+  let proc = unsafe { wglGetProcAddress(func_name.as_ptr().cast()) };
+  match proc as usize {
+    // Some non-zero values can also be errors,
+    // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows
+    0 | 1 | 2 | 3 | usize::MAX => return Err(get_last_error()),
+    _ => Ok(proc),
+  }
+}
+
+/// Gets the WGL extension string for the HDC passed.
+///
+/// * This relies on [`wgl_get_proc_address`], and so you must have a context
+///   current for it to work.
+/// * If `wgl_get_proc_address` fails then an Application Error is generated.
+/// * If `wgl_get_proc_address` succeeds but the extension string can't be
+///   obtained for some other reason you'll get a System Error.
+///
+/// The output is a space-separated list of extensions that are supported.
+///
+/// See
+/// [`wglGetExtensionsStringARB`](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
+pub unsafe fn wgl_get_extension_string_arb(
+  hdc: HDC,
+) -> Result<String, Win32Error> {
+  let f: wglGetExtensionsStringARB_t = core::mem::transmute(
+    wgl_get_proc_address(c_str!("wglGetExtensionsStringARB"))?,
+  );
+  let p: *const u8 =
+    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT)).unwrap())(hdc)
+      .cast();
+  if p.is_null() {
+    Err(get_last_error())
+  } else {
+    let bytes = gather_null_terminated_bytes(p);
+    Ok(min_alloc_lossy_into_string(bytes))
+  }
+}
+
+pub fn get_wgl_basics() -> Result<
+  (
+    Vec<String>,
+    wglChoosePixelFormatARB_t,
+    wglCreateContextAttribsARB_t,
+    wglSwapIntervalEXT_t,
+  ),
+  Win32Error,
+> {
+  let instance = get_process_handle();
+  let class_name = "name that is unlikely to clash 38o475983475923487593875";
+  let class_name_wn = wide_null(class_name);
+  let wc = WNDCLASSW {
+    style: CS_OWNDC,
+    lpfnWndProc: Some(DefWindowProcW),
+    hInstance: instance,
+    lpszClassName: class_name_wn.as_ptr(),
+    ..Default::default()
+  };
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+
+  struct OnDropUnregisterClassW(ATOM, HINSTANCE);
+  impl Drop for OnDropUnregisterClassW {
+    fn drop(&mut self) {
+      let _ = unsafe { unregister_class_by_atom(self.0, self.1) };
+    }
+  }
+  let _atom = OnDropUnregisterClassW(unsafe { register_class(&wc) }?, instance);
+
+  struct OnDropDestroyWindow(HWND);
+  impl Drop for OnDropDestroyWindow {
+    fn drop(&mut self) {
+      let _ = unsafe { destroy_window(self.0) };
+    }
+  }
+  let hwnd = OnDropDestroyWindow(unsafe {
+    create_app_window(class_name, "Fake Window", None, [1, 1], null_mut())
+  }?);
+
+  struct OnDropReleaseDC(HWND, HDC);
+  impl Drop for OnDropReleaseDC {
+    fn drop(&mut self) {
+      let _ = unsafe { release_dc(self.0, self.1) };
+    }
+  }
+  let hdc = OnDropReleaseDC(
+    hwnd.0,
+    unsafe { get_dc(hwnd.0) }
+      .ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT))?,
+  );
+
+  let pf_index = unsafe { choose_pixel_format(hdc.1, &pfd) }?;
+  unsafe { set_pixel_format(hdc.1, pf_index, &pfd) }?;
+
+  struct OnDropDeleteContext(HGLRC);
+  impl Drop for OnDropDeleteContext {
+    fn drop(&mut self) {
+      let _ = unsafe { wgl_delete_context(self.0) };
+    }
+  }
+  let hglrc = OnDropDeleteContext(unsafe { wgl_create_context(hdc.1) }?);
+
+  unsafe { wgl_make_current(hdc.1, hglrc.0) }?;
+
+  let wgl_extensions: Vec<String> =
+    unsafe { wgl_get_extension_string_arb(hdc.1) }
+      .map(|s| {
+        s.split(' ').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect()
+      })
+      .unwrap_or(Vec::new());
+
+  let choose_pixel_format: wglChoosePixelFormatARB_t = unsafe {
+    core::mem::transmute(wgl_get_proc_address(c_str!(
+      "wglChoosePixelFormatARB"
+    ))?)
+  };
+  let create_context_attribs: wglCreateContextAttribsARB_t = unsafe {
+    core::mem::transmute(wgl_get_proc_address(c_str!(
+      "wglCreateContextAttribsARB"
+    ))?)
+  };
+  let swap_interval: wglSwapIntervalEXT_t = unsafe {
+    core::mem::transmute(wgl_get_proc_address(c_str!("wglSwapIntervalEXT"))?)
+  };
+
+  unsafe { wgl_make_current(null_mut(), null_mut()) }?;
+
+  Ok((
+    wgl_extensions,
+    choose_pixel_format,
+    create_context_attribs,
+    swap_interval,
+  ))
 }

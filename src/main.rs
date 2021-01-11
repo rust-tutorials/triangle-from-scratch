@@ -1,54 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use core::ptr::null_mut;
-
 use triangle_from_scratch::win32::*;
 
 fn main() {
   let instance = get_process_handle();
 
-  // fake window stuff
-  let fake_window_class = "Fake Window Class";
-  let fake_window_class_wn = wide_null(fake_window_class);
-
-  let mut fake_wc = WNDCLASSW::default();
-  fake_wc.style = CS_OWNDC;
-  fake_wc.lpfnWndProc = Some(DefWindowProcW);
-  fake_wc.hInstance = instance;
-  fake_wc.lpszClassName = fake_window_class_wn.as_ptr();
-
-  let fake_atom = unsafe { register_class(&fake_wc) }.unwrap();
-
-  let pfd = PIXELFORMATDESCRIPTOR {
-    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    iPixelType: PFD_TYPE_RGBA,
-    cColorBits: 32,
-    cDepthBits: 24,
-    cStencilBits: 8,
-    iLayerType: PFD_MAIN_PLANE,
-    ..Default::default()
-  };
-  let fake_hwnd = unsafe {
-    create_app_window(
-      fake_window_class,
-      "Fake Window",
-      None,
-      [1, 1],
-      null_mut(),
-    )
-  }
-  .unwrap();
-  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
-  let pf_index = unsafe { choose_pixel_format(fake_hdc, &pfd) }.unwrap();
-  if let Ok(pfd) = unsafe { describe_pixel_format(fake_hdc, pf_index) } {
-    println!("{:?}", pfd);
-  } else {
-    println!("Error: Couldn't get pixel format description.");
-  }
-  unsafe { set_pixel_format(fake_hdc, pf_index, &pfd) }.unwrap();
-  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
-  unsafe { destroy_window(fake_hwnd) }.unwrap();
-  unsafe { unregister_class_by_atom(fake_atom, instance) }.unwrap();
+  #[allow(non_snake_case)]
+  let (
+    wgl_extensions,
+    _wglChoosePixelFormatARB,
+    _wglCreateContextAttribsARB,
+    _wglSwapIntervalEXT,
+  ) = get_wgl_basics().unwrap();
+  println!("> WGL Extensions: {:?}", wgl_extensions);
 
   // real window stuff
   let sample_window_class = "Sample Window Class";
@@ -110,6 +74,7 @@ pub unsafe extern "system" fn window_procedure(
     }
     WM_CREATE => println!("Create"),
     WM_CLOSE => {
+      /*
       let text_null = wide_null("Really quit?");
       let caption_null = wide_null("My Caption");
       let mb_output = MessageBoxW(
@@ -121,6 +86,8 @@ pub unsafe extern "system" fn window_procedure(
       if mb_output == IDOK {
         let _success = DestroyWindow(hwnd);
       }
+      */
+      let _success = DestroyWindow(hwnd);
     }
     WM_DESTROY => {
       match get_window_userdata::<i32>(hwnd) {
