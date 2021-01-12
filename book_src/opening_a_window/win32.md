@@ -26,7 +26,8 @@ that we just found...
 To summarize the opening portion:
 * Every window needs a window class.
 * A window class is registered with the OS at runtime.
-* We need to fill in a [WNDCLASSA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa) (or [WNDCLASSW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw))
+* We need to fill in a [WNDCLASSA](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa)
+  (or [WNDCLASSW](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw))
 
 Whoa, slow down, hold on, what's this structure thing? And why are there two versions?
 
@@ -1264,14 +1265,44 @@ C:\Program Files (x86)\Windows Kits\10\Include>rg "#define MAKEINTRESOURCE"
 10.0.16299.0\shared\ks.h
 4464:#define MAKEINTRESOURCE( res ) ((ULONG_PTR) (USHORT) res)
 ```
-Hm, so.. the input value is cast to a `WORD`,
+This is a `#define`, which technically *isn't* C code.
+It's a declaration for a thing called the "C Pre-Processor",
+which is a tool that runs over a source file *before* the text gets to the compiler itself.
+In the case of a `#define`, the general form is `#define original replacement`.
+Any occurrence of the `original` is replaced (textually) with `replacement`.
+So `#define MAKEINTRESOURCE  MAKEINTRESOURCEW` makes all occurrences of `MAKEINTRESOURCE` become `MAKEINTRESOURCEW`,
+before the compiler even sees the source code.
+Since there are two different `#define` statements for `MAKEINTRESOURCE` we can assume that they're conditional,
+and a given program would get one or the other during compilation.
+If you go investigate `WinUser.h` you'll see that this is the case,
+but I don't really want to quote source code blocks from *Microsoft* files,
+because I'm not clear on how big of a quote block would be "fair use".
+
+Anyway, if there's input arguments on the original then they can be written to accept an expression.
+And then the expansion puts the expression in somewhere.
+That's how `MAKEINTRESOURCEW(i)` works,
+anything inside the parentheses becomes `i` in the replacement expression.
+`MAKEINTRESOURCEW(2+2)` would become `((LPWSTR)((ULONG_PTR)((WORD)(2+2))))`.
+
+Finally, if there's a backslash at the end of a `#define` line it will continue into the next line.
+That's not the case here,
+but more complicated defines can end up using backslashes,
+so you should just be aware if you're trying to read a lot of C code.
+
+In C these are called "macros",
+but because they're so different from how a macro works in Rust,
+I'll try to just call them a `#define`.
+
+Back to examining `MAKEINTRESOURCE` itself.
+The input value is cast to a `WORD`,
 then cast directly to a `ULONG_PTR`,
 then cast directly to a string pointer (either ansi or wide).
-That's not too hard at all.
+That's not too hard for us to do.
 
-We *could* do this as a Rust macro,
-but I feel like we might want to use a `const fn` instead.
-I just like having the types be a little more checked when possible.
+Since this was done as a C-style macro,
+you might think that we'd want to do a Rust-style macro too.
+However, I think we might want to use a `const fn` instead.
+I just like having the type checking when possible.
 ```rust
 type LPWSTR = *mut WCHAR;
 type ULONG_PTR = usize;

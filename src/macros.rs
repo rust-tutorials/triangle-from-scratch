@@ -60,3 +60,11 @@ fn test_utf16_null() {
   const HELLO: &[u16] = &utf16_null!("hello");
   assert_eq!(HELLO, &"hello\0".encode_utf16().collect::<Vec<u16>>());
 }
+
+/// Turns a rust string literal into a null-terminated `&[u8]`.
+#[macro_export]
+macro_rules! c_str {
+  ($text:expr) => {{
+    concat!($text, '\0').as_bytes()
+  }};
+}

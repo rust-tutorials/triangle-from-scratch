@@ -891,16 +891,17 @@ pub fn set_last_error(e: Win32Error) {
 }
 ```
 
-Now we can make an unsafe function for setting the userdata pointer:
+Now we can make an unsafe function for setting the userdata pointer.
+We'll make it generic over whatever pointer type you want:
 ```rust
 /// Sets the "userdata" pointer of the window (`GWLP_USERDATA`).
 ///
 /// **Returns:** The previous userdata pointer.
 ///
 /// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
-pub unsafe fn set_window_userdata(
-  hwnd: HWND, ptr: *mut c_void,
-) -> Result<*mut c_void, Win32Error> {
+pub unsafe fn set_window_userdata<T>(
+  hwnd: HWND, ptr: *mut T,
+) -> Result<*mut T, Win32Error> {
   set_last_error(Win32Error(0));
   let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
   if out == 0 {
@@ -909,10 +910,10 @@ pub unsafe fn set_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 ```
@@ -926,21 +927,23 @@ And this lets us upgrade our window creation process a bit:
       if createstruct.is_null() {
         return 0;
       }
-      let boxed_i32_ptr = (*createstruct).lpCreateParams;
-      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
+      let ptr = (*createstruct).lpCreateParams as *mut i32;
+      return set_window_userdata::<i32>(hwnd, ptr).is_ok() as LRESULT;
     }
 ```
 
-The getter for the userdata pointer is basically the same deal:
+The getter for the userdata pointer is basically the same deal.
+Again, we're making it generic so you can ask for the pointer as pointing to any type,
+and then it'll do the cast for you.
+If you *forget* to say a type you'll get a type inference error,
+which is good in this case, because you don't want to forget the type:
 ```rust
 /// Gets the "userdata" pointer of the window (`GWLP_USERDATA`).
 ///
 /// **Returns:** The userdata pointer.
 ///
 /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
-pub unsafe fn get_window_userdata(
-  hwnd: HWND,
-) -> Result<*mut c_void, Win32Error> {
+pub unsafe fn get_window_userdata<T>(hwnd: HWND) -> Result<*mut T, Win32Error> {
   set_last_error(Win32Error(0));
   let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
   if out == 0 {
@@ -949,10 +952,10 @@ pub unsafe fn get_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 ```
@@ -961,7 +964,7 @@ Now we can adjust how WM_DESTROY and WM_PAINT are handled.
 ```rust
 // in `window_procedure`
     WM_DESTROY => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
           Box::from_raw(ptr);
           println!("Cleaned up the box.");
@@ -976,9 +979,8 @@ Now we can adjust how WM_DESTROY and WM_PAINT are handled.
       PostQuitMessage(0);
     }
     WM_PAINT => {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::<i32>(hwnd) {
         Ok(ptr) if !ptr.is_null() => {
-          let ptr = ptr as *mut i32;
           println!("Current ptr: {}", *ptr);
           *ptr += 1;
         }
