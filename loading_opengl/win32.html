@@ -1,0 +1,2102 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Win32 - Triangle From Scratch</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="../favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="../favicon.png">
+        
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html" class="active"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">3.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">3.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Triangle From Scratch</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#loading-opengl-with-win32" id="loading-opengl-with-win32">Loading OpenGL With Win32</a></h1>
+<p>On Windows, turning on OpenGL requires... a few steps.</p>
+<p>It's honestly gonna seem borderline silly when I explain it.</p>
+<p>Basically, Microsoft would rather that you use DirectX,
+the Windows-exclusive graphics card API,
+and so they don't really bother to make it <em>easy</em> to turn on OpenGL.</p>
+<h2><a class="header" href="#documentation" id="documentation">Documentation</a></h2>
+<p>In terms of documentation for opening a GL Context,
+you can check out <a href="https://docs.microsoft.com/en-us/windows/win32/opengl/rendering-contexts">MSDN</a>
+like we've done before,
+but you'll probably get a little more help from
+<a href="https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)">The OpenGL Wiki</a>.
+Technically, the context creation process is fully outside the OpenGL specification.
+However, they still explain how to create a context on the wiki because it's obviously a necessary step to use GL.</p>
+<h1><a class="header" href="#expanding-the-cleaned-up-win32-example" id="expanding-the-cleaned-up-win32-example">Expanding the &quot;Cleaned Up&quot; Win32 Example</a></h1>
+<p>For this lesson we'll be using the &quot;cleaned up&quot; Win32 example as our starting point.</p>
+<h2><a class="header" href="#device-context" id="device-context">Device Context</a></h2>
+<p>The first thing we need to do is adjust the <code>WNDCLASSW</code> value that we register.</p>
+<p>According to the <a href="https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)">wiki article</a>,
+we need to set <code>CS_OWNDC</code> in the <code>style</code> field so that each window has its own device context:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">// in our fn main()
+  // ...
+  let mut wc = WNDCLASSW::default();
+  wc.style = CS_OWNDC; // NEW
+  // ...
+</code></pre></pre>
+<p>If we search for <code>CS_OWNDC</code> <a href="https://docs.microsoft.com/en-us/search/?scope=Desktop&amp;terms=CS_OWNDC">in the MSDN pages</a>,
+it leads us to the <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles">Window Class Styles</a> page.
+Ah, so many things to look at.
+We know we want <code>CS_OWNDC</code>,
+but if we glance at the other options there's mostly stuff we don't need.
+Interestingly, it looks like maybe you need to enable double-click support on your window if you want it?
+We don't need that now, but just something to remember if you want it later on.
+There's also <code>CS_HREDRAW</code> and <code>CS_VREDRAW</code>,
+which cause the full window to be redrawn if the window changes horizontal or vertical size.
+That seems fairly handy, it means we just always draw everything if the window resizes,
+and we don't have to think about re-drawing sub-regions.
+We'll use those too.</p>
+<p>All three new declarations can go directly into the <code>win32</code> module of our library:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// src/win32.rs
+
+/// Allocates a unique device context for each window in the class.
+pub const CS_OWNDC: u32 = 0x0020;
+
+/// Redraws the entire window if a movement or size adjustment changes the width
+/// of the client area.
+pub const CS_HREDRAW: u32 = 0x0002;
+
+/// Redraws the entire window if a movement or size adjustment changes the
+/// height of the client area.
+pub const CS_VREDRAW: u32 = 0x0001;
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#pixel-format-descriptor" id="pixel-format-descriptor">Pixel Format Descriptor</a></h2>
+<p>Next we need to fill out a <a href="https://docs.microsoft.com/en-us/windows/win32/api/Wingdi/ns-wingdi-pixelformatdescriptor">PIXELFORMATDESCRIPTOR</a>.
+This is our <em>request</em> for what we want the eventual pixel format of the window to be.
+We can't be sure we'll get exactly what we ask for,
+but if we ask for something fairly common we'll probably get it.</p>
+<p>Looking at the MSDN page for <code>PIXELFORMATDESCRIPTOR</code>,
+there's two very important fields that are different from any struct fields we've seen so far.
+The <code>nSize</code> and <code>nVersion</code> fields specify the struct's size (in bytes) along with a version number.
+That's a little... odd.</p>
+<h3><a class="header" href="#versioned-structs" id="versioned-structs">Versioned Structs</a></h3>
+<p>Because <em>of course</em> you know what the size of the struct is, right?
+You're using struct <code>S</code> from crate <code>foo-x.y.z</code>,
+and in version <code>x.y.z</code> of crate <code>foo</code> the struct <code>S</code> had... whatever the fields are.
+If the fields ever <em>were</em> changed,
+that would have to be published as a new version of the crate,
+then the compiler would know about the change when you updated the dependency.
+So there's totally no reason to ever write down the size of the struct within the struct itself, right?</p>
+<p>Nope.</p>
+<p>This is one area where C still has Rust completely beat: binary stability.</p>
+<p>See the folks at Microsoft want programs to <em>last</em>.
+Like, they want programs to keep working <em>forever</em> if possible.
+Users have their old video games,
+or their old art software,
+or their old whatever software,
+and those users want their stuff to keep working when there's a Windows Update.
+And they often <em>won't</em> update to a newer version of Windows if it breaks their stuff.
+So Microsoft would really rather that all old programs keep working for as long as possible,
+because they want to keep selling you new versions of Windows.
+They're usually pretty good at this.</p>
+<p>A few months ago I downloaded an old tile editor from an ancient website,
+and the site said &quot;this was tested on windows 95, it might work on windows 98&quot;.
+I opened it up on my modern Windows 10 machine, and it worked.
+A few of the GUI buttons looked kinda &quot;off&quot;, visually, but it worked.
+I was able to edit some tiles and export them,
+despite the program being from so long ago that the author didn't know if it would work on Windows 98.
+That's a stability success story right there.</p>
+<p>On the other hand, Diablo 2 (circa 2000) doesn't run on Windows 10 without the 1.14 patch,
+because the 1.0 patch level of the game can't launch the program for whatever reason.
+So the world isn't always as stable as we'd like.</p>
+<p>&quot;Lokathor what <em>are</em> you rambling on about? <code>cargo</code> uses SemVer, it's all plenty stable!&quot;</p>
+<p>No friends, no, hold on, not quite.</p>
+<p>You see <code>cargo</code> builds the whole universe from source every time.
+When you use <code>foo-x.y.z</code> in your project,
+<code>cargo</code> downloads the <em>source</em> for that crate with that version,
+then it builds that crate version right on your own machine,
+and then it builds your crate and links it all together.
+This all works out when you're making just <em>one</em> program.
+I mean, clean build times are huge, but whatever, right?</p>
+<p>However, when you're asking <em>two</em> programs to communicate with each other,
+obviously you need to be able to update one of the programs without updating the other program right away (or ever).
+Which means that if you ever want to be able to change your message format in the future,
+you need to put a version on that kind of message <em>now</em>,
+so that the possibility to change the version number later is left open to you.</p>
+<p>&quot;Lokathor! We're only building one program! What are you even talking about!?&quot;</p>
+<p>No, friends, <em>the operating system is the other program</em>.</p>
+<p>&quot;...what?&quot;</p>
+<p>Yeah, the operating system isn't magic.
+It's just a program.
+It's a program that runs programs for you.
+And manages when they get to use the CPU and RAM and stuff.
+So the word &quot;just&quot; is doing a lot of heavy lifting when I say &quot;it's just a program&quot;,
+but ultimately that's true.</p>
+<p>Which means that you'll often see things like the <code>PIXELFORMATDESCRIPTOR</code> struct,
+where there's something that lets you say what version of the API's protocol you're intending to use when you make the API call.
+The operating system looks at those signs, and does the right thing for the version you expect.</p>
+<p>So you end up seeing this pattern a lot any time there's an interface that's intended to be stable over a long period of time.
+It's used quite a bit within Win32, and it's <em>all over</em> in Vulkan, for example.</p>
+<p>Okay, fun digression, let's get back to the task at hand.</p>
+<h3><a class="header" href="#defining-pixelformatdescriptor" id="defining-pixelformatdescriptor">Defining PIXELFORMATDESCRIPTOR</a></h3>
+<p>In terms of the fields, the <code>PIXELFORMATDESCRIPTOR</code> type is fairly obvious:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(C)]
+pub struct PIXELFORMATDESCRIPTOR {
+  pub nSize: WORD,
+  pub nVersion: WORD,
+  pub dwFlags: DWORD,
+  pub iPixelType: BYTE,
+  pub cColorBits: BYTE,
+  pub cRedBits: BYTE,
+  pub cRedShift: BYTE,
+  pub cGreenBits: BYTE,
+  pub cGreenShift: BYTE,
+  pub cBlueBits: BYTE,
+  pub cBlueShift: BYTE,
+  pub cAlphaBits: BYTE,
+  pub cAlphaShift: BYTE,
+  pub cAccumBits: BYTE,
+  pub cAccumRedBits: BYTE,
+  pub cAccumGreenBits: BYTE,
+  pub cAccumBlueBits: BYTE,
+  pub cAccumAlphaBits: BYTE,
+  pub cDepthBits: BYTE,
+  pub cStencilBits: BYTE,
+  pub cAuxBuffers: BYTE,
+  pub iLayerType: BYTE,
+  pub bReserved: BYTE,
+  pub dwLayerMask: DWORD,
+  pub dwVisibleMask: DWORD,
+  pub dwDamageMask: DWORD,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>However, since we want the type to <em>always</em> say it's size and version,
+we'll have a <code>Default</code> impl that just sets the size and version for us.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl Default for PIXELFORMATDESCRIPTOR {
+  #[inline]
+  #[must_use]
+  fn default() -&gt; Self {
+    let mut out: Self = unsafe { core::mem::zeroed() };
+    out.nSize = core::mem::size_of::&lt;Self&gt;() as WORD;
+    out.nVersion = 1;
+    out
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h3><a class="header" href="#filling-our-our-pixelformatdescriptor" id="filling-our-our-pixelformatdescriptor">Filling Our Our PIXELFORMATDESCRIPTOR</a></h3>
+<p>The wiki page suggests that we fill out our pixel format like this:</p>
+<pre><code class="language-c">PIXELFORMATDESCRIPTOR pfd =
+{
+	sizeof(PIXELFORMATDESCRIPTOR),
+	1,
+	PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
+	PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+	32,                   // Colordepth of the framebuffer.
+	0, 0, 0, 0, 0, 0,
+	0,
+	0,
+	0,
+	0, 0, 0, 0,
+	24,                   // Number of bits for the depthbuffer
+	8,                    // Number of bits for the stencilbuffer
+	0,                    // Number of Aux buffers in the framebuffer.
+	PFD_MAIN_PLANE,
+	0,
+	0, 0, 0
+};
+</code></pre>
+<p>Well, okay, sure, let's just kinda convert that into some Rust:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">// after we register the class in fn main
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+</code></pre></pre>
+<p>Oh that's actually pretty clear.
+This time we're using the <a href="https://doc.rust-lang.org/reference/expressions/struct-expr.html#functional-update-syntax">functional update syntax</a>
+for struct creation.
+We haven't used that before,
+so I'll link the reference there for you.
+We could also use it in other places,
+such as filling out our <code>WNDCLASSW</code> value.
+Honestly, I don't even use it myself that much,
+but I thought we'd just give it a try,
+and see how it feels.</p>
+<p>Anyway, now we need to declare a bunch of consts.</p>
+<p>Except, the <code>PIXELFORMATDESCRIPTOR</code> page on MSDN <strong>doesn't</strong> list the values.</p>
+<p>Guess it's back to grepping through the windows header files.
+By the way, if you're not aware,
+there's a very fast grep tool written in rust called <code>ripgrep</code> you might want to try.</p>
+<pre><code>C:\Program Files (x86)\Windows Kits\10\Include\10.0.16299.0&gt;rg &quot;PFD_DRAW_TO_WINDOW&quot;
+um\wingdi.h
+3640:#define PFD_DRAW_TO_WINDOW          0x00000004
+
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.16299.0&gt;rg &quot;PFD_SUPPORT_OPENGL&quot;
+um\wingdi.h
+3643:#define PFD_SUPPORT_OPENGL          0x00000020
+</code></pre>
+<p>Looks like it's generally around line 3640 of <code>wingdi.h</code>,
+so we just have a look at those defines and then do a little Rust.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// [`PIXELFORMATDESCRIPTOR`] pixel type
+pub const PFD_TYPE_RGBA: u8 = 0;
+/// [`PIXELFORMATDESCRIPTOR`] pixel type
+pub const PFD_TYPE_COLORINDEX: u8 = 1;
+
+/// [`PIXELFORMATDESCRIPTOR`] layer type
+pub const PFD_MAIN_PLANE: u8 = 0;
+/// [`PIXELFORMATDESCRIPTOR`] layer type
+pub const PFD_OVERLAY_PLANE: u8 = 1;
+/// [`PIXELFORMATDESCRIPTOR`] layer type
+pub const PFD_UNDERLAY_PLANE: u8 = u8::MAX /* was (-1) */;
+
+pub const PFD_DOUBLEBUFFER: u32 = 0x00000001;
+pub const PFD_STEREO: u32 = 0x00000002;
+pub const PFD_DRAW_TO_WINDOW: u32 = 0x00000004;
+pub const PFD_DRAW_TO_BITMAP: u32 = 0x00000008;
+pub const PFD_SUPPORT_GDI: u32 = 0x00000010;
+pub const PFD_SUPPORT_OPENGL: u32 = 0x00000020;
+pub const PFD_GENERIC_FORMAT: u32 = 0x00000040;
+pub const PFD_NEED_PALETTE: u32 = 0x00000080;
+pub const PFD_NEED_SYSTEM_PALETTE: u32 = 0x00000100;
+pub const PFD_SWAP_EXCHANGE: u32 = 0x00000200;
+pub const PFD_SWAP_COPY: u32 = 0x00000400;
+pub const PFD_SWAP_LAYER_BUFFERS: u32 = 0x00000800;
+pub const PFD_GENERIC_ACCELERATED: u32 = 0x00001000;
+pub const PFD_SUPPORT_DIRECTDRAW: u32 = 0x00002000;
+pub const PFD_DIRECT3D_ACCELERATED: u32 = 0x00004000;
+pub const PFD_SUPPORT_COMPOSITION: u32 = 0x00008000;
+
+/// use with [`ChoosePixelFormat`] only
+pub const PFD_DEPTH_DONTCARE: u32 = 0x20000000;
+/// use with [`ChoosePixelFormat`] only
+pub const PFD_DOUBLEBUFFER_DONTCARE: u32 = 0x40000000;
+/// use with [`ChoosePixelFormat`] only
+pub const PFD_STEREO_DONTCARE: u32 = 0x80000000;
+<span class="boring">}
+</span></code></pre></pre>
+<p>When translating a C <code>#define</code> into a Rust declaration you've gotta use a little judgement.
+In addition to looking at the raw numeric value,
+you've gotta try and match the type of the const to the type of the place it gets used the most.
+The pixel types and layer types get assigned to a field that's a <code>u8</code>, so we declare them as <code>u8</code>.
+The flags all get combined and assigned to a field that's a <code>u32</code>, so we declare them as a <code>u32</code>.
+In C it makes little difference (because C numbers will <em>generally</em> coerce automatically),
+but in Rust we would have to write some casts somewhere if the types don't line up,
+so we try to make our lives easy later by getting the declaration itself to have the most used type.</p>
+<h2><a class="header" href="#choosepixelformat" id="choosepixelformat">ChoosePixelFormat</a></h2>
+<p>Okay once we have a <code>PIXELFORMATDESCRIPTOR</code> value we call <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat">ChoosePixelFormat</a>
+to get a &quot;pixel format index&quot; that's the closest available pixel format to our request.</p>
+<p>First we declare the external call of course:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// note: our first use of Gdi32!
+#[link(name = &quot;Gdi32&quot;)]
+extern &quot;system&quot; {
+  /// [`ChoosePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat)
+  pub fn ChoosePixelFormat(
+    hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR,
+  ) -&gt; c_int;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Of course, this function can fail,
+so we want to have a <code>Result</code> as the output type in the final version we'll use.
+Instead of doing a whole thing with the raw calls,
+and then doing an entire revision phase to make all the &quot;nicer&quot; versions after that,
+we'll just jump right to the part where we make the nice version as we cover each new function.
+Personally, I think that seeing the &quot;all raw calls&quot; version of something is a little fun once,
+but once you start making things Rusty you might as well keep doing it as you go.
+We won't always know exactly how we want to use each extern function the moment we first see it,
+but each wrapper function is generally quite small,
+so we can usually make a change if we realize something new later on.</p>
+<p>Let's check the docs:</p>
+<blockquote>
+<p>If the function succeeds, the return value is a pixel format index (one-based) that is the closest match to the given pixel format descriptor.
+If the function fails, the return value is zero. To get extended error information, call GetLastError.</p>
+</blockquote>
+<p>The docs do <em>not</em> seem to indicate that you're allowed to pass a null pointer for the pixel format descriptor,
+so we can just require a reference instead of requiring a const pointer.</p>
+<p>Okay, easy enough:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// See [`ChoosePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat)
+pub unsafe fn choose_pixel_format(
+  hdc: HDC, ppfd: &amp;PIXELFORMATDESCRIPTOR,
+) -&gt; Result&lt;c_int, Win32Error&gt; {
+  let index = ChoosePixelFormat(hdc, ppfd);
+  if index != 0 {
+    Ok(index)
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Can we improve it any more than this?
+The only thing I can think of would be <em>maybe</em> to newtype that <code>c_int</code> value.
+We could make a <code>PixelFormatIndex</code> or something if we wanted to.
+I sure thought about it for a while, sitting on the bus.
+But now that I'm at the keyboard, it doesn't seem very error prone even as just a <code>c_int</code>.
+I think we're fine without doing that extra work.</p>
+<p>Code you don't write at all is more valuable than code you do write.
+Or, something wise sounding like that.</p>
+<p>Alright so we're gonna set up a <code>PIXELFORMATDESCRIPTOR</code> and choose a pixel format:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  // Oops, we don't have an HDC value yet!
+  let pixel_format_index = unsafe { choose_pixel_format(hdc, &amp;pfd) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<p>AGH! With no HDC from anywhere we can't choose a pixel format!
+Blast, and such.</p>
+<h3><a class="header" href="#we-need-an-hdc" id="we-need-an-hdc">We Need An HDC</a></h3>
+<p>Alright since we need an HDC to choose a pixel format,
+we'll move the choosing <em>after</em> we create our window,
+before we show it,
+and then we can get the DC for our window,
+and it'll all be fine.</p>
+<p>We'll need to use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc">GetDC</a>
+to get the HDC value for our window,
+and then eventually <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc">ReleaseDC</a>
+at some point.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+  pub fn GetDC(hWnd: HWND) -&gt; HDC;
+
+  /// [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+  pub fn ReleaseDC(hWnd: HWND, hDC: HDC) -&gt; c_int;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Okay, now we're ready.
+So we're going to get the DC for our window,
+choose a pixel format,
+we'll set that pixel format (see next section),
+and then we're all good, right?</p>
+<p>No.</p>
+<p>Again, of course, this has to be more complicated than that.</p>
+<p>If we glance back at <a href="https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)">the wiki</a>
+we'll see a section called &quot;Proper Context Creation&quot; with the following warning:</p>
+<blockquote>
+<p><strong>Warning:</strong> Unfortunately, Windows does not allow the user to change the pixel format of a window.
+You get to set it exactly once.
+Therefore, if you want to use a different pixel format from the one your fake context used (for sRGB or multisample framebuffers, or just different bit-depths of buffers),
+you must destroy the window entirely and recreate it after we are finished with the dummy context.</p>
+</blockquote>
+<p>...oookay</p>
+<p>Sure, we'll just do <em>that</em> thing.</p>
+<h3><a class="header" href="#making-a-fake-window" id="making-a-fake-window">Making A Fake Window</a></h3>
+<p>So in between registering the class and making the <code>i32</code> box,
+we've got quite a bit of new middle work</p>
+<pre><pre class="playground"><code class="language-rust edition2018">// in fn main
+  let _atom = unsafe { register_class(&amp;wc) }.unwrap();
+
+  // fake window stuff
+  let pfd = PIXELFORMATDESCRIPTOR {
+    dwFlags: PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    iPixelType: PFD_TYPE_RGBA,
+    cColorBits: 32,
+    cDepthBits: 24,
+    cStencilBits: 8,
+    iLayerType: PFD_MAIN_PLANE,
+    ..Default::default()
+  };
+  let fake_hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      &quot;Fake Window&quot;,
+      None,
+      [1, 1],
+      null_mut(),
+    )
+  }
+  .unwrap();
+  let fake_hdc = unsafe { GetDC(fake_hwnd) };
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &amp;pfd) }.unwrap();
+  // TODO: SetPixelFormat
+  assert!(unsafe { ReleaseDC(fake_hwnd, fake_hdc) } != 0);
+  assert!(unsafe { DestroyWindow(fake_hwnd) } != 0);
+
+  // real window stuff
+  let lparam: *mut i32 = Box::leak(Box::new(5_i32));
+</code></pre></pre>
+<p>Okay, I guess that makes sense.</p>
+<p>Hmm, I don't like those mysterious <code>!= 0</code> parts.
+Let's wrap those into our lib.
+And since we're wrapping <code>ReleaseDC</code> we might as well do <code>GetDC</code> too.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// See [`GetDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdc)
+pub unsafe fn get_dc(hwnd: HWND) -&gt; Option&lt;HDC&gt; {
+  let hdc = GetDC(hwnd);
+  if hdc.is_null() {
+    None
+  } else {
+    Some(hdc)
+  }
+}
+
+/// See [`ReleaseDC`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-releasedc)
+#[must_use]
+pub unsafe fn release_dc(hwnd: HWND, hdc: HDC) -&gt; bool {
+  let was_released = ReleaseDC(hwnd, hdc);
+  was_released != 0
+}
+
+/// See [`DestroyWindow`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-destroywindow)
+pub unsafe fn destroy_window(hwnd: HWND) -&gt; Result&lt;(), Win32Error&gt; {
+  let destroyed = DestroyWindow(hwnd);
+  if destroyed != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here the output <em>isn't</em> always a result.
+Since <code>GetDC</code> doesn't have any error code to report (according to its docs), we just use <code>Option</code>.
+Similarly, <code>ReleaseDC</code> doesn't seem to report an error code, so we just return a <code>bool</code>.
+However, in both cases we want to encourage the caller to actually use the output,
+because not checking these could lead to nasty memory leaks.
+So we use the <code>#[must_use]</code> attribute to ensure that they get a warning if they don't use the output value.</p>
+<p>Which means our program looks more like this now:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &amp;pfd) }.unwrap();
+  // TODO: SetPixelFormat
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#setpixelformat" id="setpixelformat">SetPixelFormat</a></h2>
+<p>Once we've chosen a pixel format, we set it to the HDC with <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat">SetPixelFormat</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;Gdi32&quot;)]
+extern &quot;system&quot; {
+  /// [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+  pub fn SetPixelFormat(
+    hdc: HDC, format: c_int, ppfd: *const PIXELFORMATDESCRIPTOR,
+  ) -&gt; BOOL;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Which we wrap up a little nicer like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Sets the pixel format of an HDC.
+///
+/// * If it's a window's HDC then it sets the pixel format of the window.
+/// * You can't set a window's pixel format more than once.
+/// * Call this *before* creating an OpenGL context.
+/// * OpenGL windows should use [`WS_CLIPCHILDREN`] and [`WS_CLIPSIBLINGS`]
+/// * OpenGL windows should *not* use `CS_PARENTDC`
+///
+/// See [`SetPixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat)
+pub unsafe fn set_pixel_format(
+  hdc: HDC, format: c_int, ppfd: &amp;PIXELFORMATDESCRIPTOR,
+) -&gt; Result&lt;(), Win32Error&gt; {
+  let success = SetPixelFormat(hdc, format, ppfd);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Oh, what's that?
+Yeah we need some extra window styles.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Excludes the area occupied by child windows when drawing occurs within the
+/// parent window.
+///
+/// This style is used when creating the parent window.
+pub const WS_CLIPCHILDREN: u32 = 0x02000000;
+
+/// Clips child windows relative to each other.
+///
+/// That is, when a particular child window receives a WM_PAINT message,
+/// the WS_CLIPSIBLINGS style clips all other overlapping child windows out of
+/// the region of the child window to be updated. If WS_CLIPSIBLINGS is not
+/// specified and child windows overlap, it is possible, when drawing within the
+/// client area of a child window, to draw within the client area of a
+/// neighboring child window.
+pub const WS_CLIPSIBLINGS: u32 = 0x04000000;
+
+pub unsafe fn create_app_window(
+  // ...
+  let hwnd = CreateWindowExW(
+    WS_EX_APPWINDOW | WS_EX_OVERLAPPEDWINDOW,
+    class_name_null.as_ptr(),
+    window_name_null.as_ptr(),
+    // New Style!
+    WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+    x,
+    y,
+    width,
+    height,
+    null_mut(),
+    null_mut(),
+    get_process_handle(),
+    create_param,
+  );
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Okay, so now we can set the pixel format on our fake HDC:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let fake_hdc = unsafe { get_dc(fake_hwnd) }.unwrap();
+  let pf_index = unsafe { choose_pixel_format(fake_hdc, &amp;pfd) }.unwrap();
+  unsafe { set_pixel_format(fake_hdc, pf_index, &amp;pfd) }.unwrap();
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<p>Hmm, wait, hold on.
+So we choose a pixel format, and get an index.
+How do we check if that index is close to what we wanted?
+Ah, the docs say we need <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat">DescribePixelFormat</a>.
+This is one of those &quot;does two things at once&quot; functions.
+When it succeeds, not only is the return code a non-zero value,
+it's the maximum index of pixel formats.
+So you can call the function with a null pointer to just get the maximum index.
+We'll split this up into two different functions.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gets the maximum pixel format index for the HDC.
+///
+/// Pixel format indexes are 1-based.
+///
+/// To print out info on all the pixel formats you'd do something like this:
+/// ```no_run
+/// # use triangle_from_scratch::win32::*;
+/// let hdc = todo!(&quot;create a window to get an HDC&quot;);
+/// let max = unsafe { get_max_pixel_format_index(hdc).unwrap() };
+/// for index in 1..=max {
+///   let pfd = unsafe { describe_pixel_format(hdc, index).unwrap() };
+///   todo!(&quot;print the pfd info you want to know&quot;);
+/// }
+/// ```
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn get_max_pixel_format_index(
+  hdc: HDC,
+) -&gt; Result&lt;c_int, Win32Error&gt; {
+  let max_index = DescribePixelFormat(
+    hdc,
+    1,
+    size_of::&lt;PIXELFORMATDESCRIPTOR&gt;() as _,
+    null_mut(),
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(max_index)
+  }
+}
+
+/// Gets the pixel format info for a given pixel format index.
+///
+/// See [`DescribePixelFormat`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-describepixelformat)
+pub unsafe fn describe_pixel_format(
+  hdc: HDC, format: c_int,
+) -&gt; Result&lt;PIXELFORMATDESCRIPTOR, Win32Error&gt; {
+  let mut pfd = PIXELFORMATDESCRIPTOR::default();
+  let max_index = DescribePixelFormat(
+    hdc,
+    format,
+    size_of::&lt;PIXELFORMATDESCRIPTOR&gt;() as _,
+    &amp;mut pfd,
+  );
+  if max_index == 0 {
+    Err(get_last_error())
+  } else {
+    Ok(pfd)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So we'll print out our pixel format info when we boot the program, seems neat to know.
+We just throw a <code>#[derive(Debug)]</code> on the <code>PIXELFORMATDESCRIPTOR</code> struct and add a little bit to our <code>main</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  if let Ok(pfd) = unsafe { describe_pixel_format(fake_hdc, pf_index) } {
+    println!(&quot;{:?}&quot;, pfd);
+  } else {
+    println!(&quot;Error: Couldn't get pixel format description.&quot;);
+  }
+<span class="boring">}
+</span></code></pre></pre>
+<p>Let's give this a try and see what pixel format info prints out:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.34s
+     Running `target\debug\triangle-from-scratch.exe`
+NC Create
+Create
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+userdata ptr is null, no cleanup
+NC Create
+Create
+</code></pre>
+<p>Uh... huh? So we're seeing the info, but there's no window!
+Some sort of problem has prevented the real window from showing up.
+If we comment out all the &quot;fake window&quot; stuff the real window comes back,
+so some part of that code is at fault here.</p>
+<p>Hmm.</p>
+<p>What if we make a fake window class to go with our fake window?</p>
+<pre><pre class="playground"><code class="language-rust edition2018">fn main() {
+  // fake window stuff
+  let fake_window_class = &quot;Fake Window Class&quot;;
+  let fake_window_class_wn = wide_null(fake_window_class);
+
+  let mut fake_wc = WNDCLASSW::default();
+  fake_wc.style = CS_OWNDC;
+  fake_wc.lpfnWndProc = Some(DefWindowProcW);
+  fake_wc.hInstance = get_process_handle();
+  fake_wc.lpszClassName = fake_window_class_wn.as_ptr();
+
+  let _atom = unsafe { register_class(&amp;fake_wc) }.unwrap();
+
+  let pfd = // ...
+  let fake_hwnd = unsafe {
+    create_app_window(
+      fake_window_class,
+      &quot;Fake Window&quot;,
+      None,
+      [1, 1],
+      null_mut(),
+    )
+  }
+  .unwrap();
+</code></pre></pre>
+<p>Okay, now it works.
+Not sure <em>what</em> the difference is here, but I guess we can investigate that later.
+Only little problem is that now we have an extra window class floating around.
+If we use <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw">UnregisterClassW</a>
+we can clean that up.</p>
+<p>With <code>UnregisterClassW</code> you can pass in a pointer to a class name,
+<em>or</em> you can pass in an atom value.
+We'll make a separate function for each style.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;User32&quot;)]
+extern &quot;system&quot; {
+  /// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+  pub fn UnregisterClassW(lpClassName: LPCWSTR, hInstance: HINSTANCE) -&gt; BOOL;
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The name must be the name of a registered window class.
+/// * This requires re-encoding the name to null-terminated utf-16, which
+///   allocates. Using [`unregister_class_by_atom`] instead does not allocate,
+///   if you have the atom available.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See
+/// [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_name(
+  name: &amp;str, instance: HINSTANCE,
+) -&gt; Result&lt;(), Win32Error&gt; {
+  let name_null = wide_null(name);
+  let out = UnregisterClassW(name_null.as_ptr(), instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+
+/// Un-registers the window class from the `HINSTANCE` given.
+///
+/// * The atom must be the atom of a registered window class.
+/// * Before calling this function, an application must destroy all windows
+///   created with the specified class.
+///
+/// See [`UnregisterClassW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unregisterclassw)
+pub unsafe fn unregister_class_by_atom(
+  a: ATOM, instance: HINSTANCE,
+) -&gt; Result&lt;(), Win32Error&gt; {
+  let out = UnregisterClassW(a as LPCWSTR, instance);
+  if out != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And here's another thing that went wrong when I tried to figure this &quot;window doesn't show up&quot; problem.
+At one point I was registering the same class twice,
+because my <code>fake_wc</code> had the same name string as the &quot;real&quot; <code>wc</code>.
+Then I got this error:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.73s
+     Running `target\debug\triangle-from-scratch.exe`        
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Win32Error(1410)', src\main.rs:63:46
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+</code></pre>
+<p>Not helpful!
+Error 1410, what on Earth does that mean?
+So we should adjust the error lookups to happen in <code>Debug</code> as well as <code>Display</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(transparent)]
+pub struct Win32Error(pub DWORD);
+impl std::error::Error for Win32Error {}
+
+impl core::fmt::Debug for Win32Error {
+  /// Displays the error using `FormatMessageW`
+  ///
+  /// ```
+  /// use triangle_from_scratch::win32::*;
+  /// let s = format!(&quot;{:?}&quot;, Win32Error(0));
+  /// assert_eq!(&quot;The operation completed successfully.  &quot;, s);
+  /// let app_error = format!(&quot;{:?}&quot;, Win32Error(1 &lt;&lt; 29));
+  /// assert_eq!(&quot;Win32ApplicationError(536870912)&quot;, app_error);
+  /// ```
+  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    // everything from before
+  }
+}
+impl core::fmt::Display for Win32Error {
+  /// Same as `Debug` impl
+  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    write!(f, &quot;{:?}&quot;, self)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>But what if you <em>really wanted that error number</em>.
+Well, maybe you do, and for that, we can use the &quot;alternate&quot; flag.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  fn fmt(&amp;self, f: &amp;mut core::fmt::Formatter) -&gt; core::fmt::Result {
+    // ...
+    if f.alternate() {
+      return write!(f, &quot;Win32Error({})&quot;, self.0);
+    }
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now if you format with &quot;{:?}&quot; (which is what <code>unwrap</code> uses)
+then you get the message form,
+and if you really want to see the number you can format with &quot;{:#?}&quot;.</p>
+<p>Now when an <code>unwrap</code> goes bad it looks like this:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+   Compiling triangle-from-scratch v0.1.0 (D:\dev\triangle-from-scratch)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.87s
+     Running `target\debug\triangle-from-scratch.exe`
+PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Class already exists.  ', src\main.rs:63:46
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `target\debug\triangle-from-scratch.exe` (exit code: 101)
+</code></pre>
+<p>Ah, look, the class already existed, of course!</p>
+<p>So finally we can set a pixel format on a fake window,
+and then clean it all up,
+and then make our real window.</p>
+<h2><a class="header" href="#wglcreatecontext" id="wglcreatecontext">wglCreateContext</a></h2>
+<p>As fun as it is to make a fake window and do not much with it and then throw it away,
+it might be even better if we did something with it.</p>
+<p>The point of all this is that we <em>want</em> to be able to create an OpenGL context with the latest version,
+and other advanced features.
+However, Windows only lets you directly make an OpenGL 1.1 context.
+To make a context with a newer version than that, you need to use an extension.
+To use an extension, you need to check the extension string to see what extensions are available.
+To check the extension string, you need to have a current OpenGL context.</p>
+<p>What we do is we use our fake window to make a fake GL context,
+which will be for the old OpenGL 1.1,
+then we can get the extension string to check what extensions are available.
+This lets us use the &quot;advanced&quot; capabilities like &quot;making a context with a modern API version&quot;.</p>
+<p>I told you at the start that this was gonna seem silly when I explained what was going on.
+<a href="http://www.mspaintadventures.com/sweetbroandhellajeff/">I warned you about stairs bro!</a></p>
+<p>Anyway, once we've gotten the info we need from the fake context then we close it,
+and we close out all the other &quot;fake&quot; stuff,
+and then we make the &quot;real&quot; stuff.</p>
+<p>That means our next step is <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext">wglCreateContext</a>,
+and also the inverse, <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext">wglDeleteContext</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Handle (to a) GL Rendering Context
+pub type HGLRC = HANDLE;
+
+#[link(name = &quot;Opengl32&quot;)]
+extern &quot;system&quot; {
+  /// [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+  pub fn wglCreateContext(Arg1: HDC) -&gt; HGLRC;
+
+  /// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+  pub fn wglDeleteContext(Arg1: HGLRC) -&gt; BOOL;
+}
+
+/// See [`wglCreateContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglcreatecontext)
+pub unsafe fn wgl_create_context(hdc: HDC) -&gt; Result&lt;HGLRC, Win32Error&gt; {
+  let hglrc = wglCreateContext(hdc);
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+
+/// Deletes a GL Context.
+///
+/// * You **cannot** use this to delete a context current in another thread.
+/// * You **can** use this to delete the current thread's context. The context
+///   will be made not-current automatically before it is deleted.
+///
+/// See
+/// [`wglDeleteContext`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wgldeletecontext)
+pub unsafe fn wgl_delete_context(hglrc: HGLRC) -&gt; Result&lt;(), Win32Error&gt; {
+  let success = wglDeleteContext(hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then in <code>main</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  unsafe { set_pixel_format(fake_hdc, pf_index, &amp;pfd) }.unwrap();
+  let fake_hglrc = unsafe { wgl_create_context(fake_hdc) }.unwrap();
+
+  // TODO: work with the fake context.
+
+  // cleanup the fake stuff
+  unsafe { wgl_delete_context(fake_hglrc) }.unwrap();
+  assert!(unsafe { release_dc(fake_hwnd, fake_hdc) });
+  unsafe { destroy_window(fake_hwnd) }.unwrap();
+  unsafe { unregister_class_by_atom(fake_atom, instance) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#wglmakecurrent" id="wglmakecurrent">wglMakeCurrent</a></h2>
+<p>It's no use making and destroying this fake context if we don't make it current:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[link(name = &quot;Opengl32&quot;)]
+extern &quot;system&quot; {
+  /// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+  pub fn wglMakeCurrent(hdc: HDC, hglrc: HGLRC) -&gt; BOOL;
+}
+
+/// Makes a given HGLRC current in the thread and targets it at the HDC given.
+///
+/// * You can safely pass `null_mut` for both parameters if you wish to make no
+///   context current in the thread.
+///
+/// See
+/// [`wglMakeCurrent`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglmakecurrent)
+pub unsafe fn wgl_make_current(
+  hdc: HDC, hglrc: HGLRC,
+) -&gt; Result&lt;(), Win32Error&gt; {
+  let success = wglMakeCurrent(hdc, hglrc);
+  if success != 0 {
+    Ok(())
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Before we can use the context we have to make it current,
+and before we destroy it we have to make it not be current.
+On Windows we don't <em>have</em> to make it not-current,
+but it's just good habit because on <em>other</em> systems you must make a context not-current before you destroy it.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let fake_hglrc = unsafe { wgl_create_context(fake_hdc) }.unwrap();
+  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  // TODO: work with the fake context.
+
+  // cleanup the fake stuff
+  unsafe { wgl_make_current(null_mut(), null_mut()) }.unwrap();
+  unsafe { wgl_delete_context(fake_hglrc) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#wglgetprocaddress" id="wglgetprocaddress">wglGetProcAddress</a></h2>
+<p>This is what we've been after the whole time!</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// macros.rs
+
+/// Turns a rust string literal into a null-terminated `&amp;[u8]`.
+#[macro_export]
+macro_rules! c_str {
+  ($text:expr) =&gt; {{
+    concat!($text, '\0').as_bytes()
+  }};
+}
+
+// win32.rs
+
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const c_char;
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut c_void;
+
+#[link(name = &quot;Opengl32&quot;)]
+extern &quot;system&quot; {
+  /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
+  pub fn wglGetProcAddress(Arg1: LPCSTR) -&gt; PROC;
+}
+
+/// Gets a GL function address.
+///
+/// The input should be a null-terminated function name string. Use the
+/// [`c_str!`] macro for assistance.
+///
+/// * You must have an active GL context for this to work. Otherwise you will
+///   always get an error.
+/// * The function name is case sensitive, and spelling must be exact.
+/// * All outputs are context specific. Functions supported in one rendering
+///   context are not necessarily supported in another.
+/// * The extension function addresses are unique for each pixel format. All
+///   rendering contexts of a given pixel format share the same extension
+///   function addresses.
+///
+/// This *will not* return function pointers exported by `OpenGL32.dll`, meaning
+/// that it won't return OpenGL 1.1 functions. For those old function, use
+/// [`GetProcAddress`].
+pub fn wgl_get_proc_address(func_name: &amp;[u8]) -&gt; Result&lt;PROC, Win32Error&gt; {
+  // check that we end the slice with a \0 as expected.
+  match func_name.last() {
+    Some(b'\0') =&gt; (),
+    _ =&gt; return Err(Win32Error(Win32Error::APPLICATION_ERROR_BIT)),
+  }
+  // Safety: we've checked that the end of the slice is null-terminated.
+  let proc = unsafe { wglGetProcAddress(func_name.as_ptr().cast()) };
+  match proc as usize {
+    // Some non-zero values can also be errors,
+    // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows
+    0 | 1 | 2 | 3 | usize::MAX =&gt; return Err(get_last_error()),
+    _ =&gt; Ok(proc),
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>This part is pretty simple.
+We get a value back, and on success it's a pointer to a function.
+We'll have to use <a href="https://doc.rust-lang.org/core/mem/fn.transmute.html">transmute</a>
+to change the type into the proper function type,
+but that's a concern for the caller to deal with.</p>
+<h2><a class="header" href="#wglgetextensionsstringarb" id="wglgetextensionsstringarb">wglGetExtensionsStringARB</a></h2>
+<p>Okay, now we can get function pointers.
+This lets us check for <a href="https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows_2">platform specific extensions</a>
+using the <a href="https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt">wglGetExtensionsStringARB</a> function.</p>
+<p>For this, we'll want a helper macro to make C-style string literals for us:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Turns a rust string literal into a null-terminated `&amp;[u8]`.
+#[macro_export]
+macro_rules! c_str {
+  ($text:expr) =&gt; {{
+    concat!($text, '\0').as_bytes()
+  }};
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then we:</p>
+<ul>
+<li>lookup the function</li>
+<li>call the function</li>
+<li>get the info from the string pointer we get back</li>
+</ul>
+<p>This part is kinda <em>a lot</em> when you just write it all inline in <code>main</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  #[allow(non_camel_case_types)]
+  type wglGetExtensionsStringARB_t =
+    unsafe extern &quot;system&quot; fn(HDC) -&gt; *const c_char;
+  let wgl_get_extension_string_arb: Option&lt;wglGetExtensionsStringARB_t&gt; = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!(&quot;wglGetExtensionsStringARB&quot;)).unwrap(),
+    )
+  };
+  let mut extension_string: *const u8 =
+    unsafe { (wgl_get_extension_string_arb.unwrap())(fake_hdc) }.cast();
+  assert!(!extension_string.is_null());
+  let mut s = String::new();
+  unsafe {
+    while *extension_string != 0 {
+      s.push(*extension_string as char);
+      extension_string = extension_string.add(1);
+    }
+  }
+  println!(&quot;&gt; Extension String: {}&quot;, s);
+
+  // cleanup the fake stuff
+<span class="boring">}
+</span></code></pre></pre>
+<p>but if we break it down it's not so bad.
+First let's put a function for gathering up a null-terminated byte string into our library.
+This isn't Win32 specific, so we'll put it in <code>lib.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gathers up the bytes from a pointer.
+///
+/// The byte sequence must be null-terminated.
+///
+/// The output excludes the null byte.
+pub unsafe fn gather_null_terminated_bytes(mut p: *const u8) -&gt; Vec&lt;u8&gt; {
+  let mut v = vec![];
+  while *p != 0 {
+    v.push(*p);
+    p = p.add(1);
+  }
+  v
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now that we have a <code>Vec&lt;u8&gt;</code> we want a <code>String</code>.
+We can use <a href="https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8">String::from_utf8</a>,
+but that returns a Result (it fails if the bytes aren't valid utf8).
+There's also <a href="https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8_lossy">String::from_utf8_lossy</a>,
+but if the bytes <em>are</em> valid utf8 then we get a borrow on our vec and we'd have to clone it to get the <code>String</code>.
+What we <em>want</em> is to move the Vec if we can, and only allocate a new Vec if we must.
+You'd think that this is a completely common thing to want,
+but for whatever reason it's not in the standard library.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// PS: naming is hard :(
+
+/// Converts a `Vec&lt;u8&gt;` into a `String` using the minimum amount of
+/// re-allocation.
+pub fn min_alloc_lossy_into_string(bytes: Vec&lt;u8&gt;) -&gt; String {
+  match String::from_utf8(bytes) {
+    Ok(s) =&gt; s,
+    Err(e) =&gt; String::from_utf8_lossy(e.as_bytes()).into_owned(),
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now in <code>win32.rs</code> we'll just <code>use super::*;</code> and make a function to get the extension string:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Gets the WGL extension string for the HDC passed.
+///
+/// * This relies on [`wgl_get_proc_address`], and so you must have a context
+///   current for it to work.
+/// * If `wgl_get_proc_address` fails then an Application Error is generated.
+/// * If `wgl_get_proc_address` succeeds but the extension string can't be
+///   obtained for some other reason you'll get a System Error.
+///
+/// The output is a space-separated list of extensions that are supported.
+///
+/// See
+/// [`wglGetExtensionsStringARB`](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_extensions_string.txt)
+pub unsafe fn wgl_get_extension_string_arb(
+  hdc: HDC,
+) -&gt; Result&lt;String, Win32Error&gt; {
+  let f: wglGetExtensionsStringARB_t = core::mem::transmute(
+    wgl_get_proc_address(c_str!(&quot;wglGetExtensionsStringARB&quot;))?,
+  );
+  let p: *const u8 =
+    (f.ok_or(Win32Error(Win32Error::APPLICATION_ERROR_BIT))?)(hdc).cast();
+  if p.is_null() {
+    Err(get_last_error())
+  } else {
+    let bytes = gather_null_terminated_bytes(p);
+    Ok(min_alloc_lossy_into_string(bytes))
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And now we can try to get the extension string with a single call to that:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">// main.rs: fn main
+  unsafe { wgl_make_current(fake_hdc, fake_hglrc) }.unwrap();
+
+  let res = unsafe { wgl_get_extension_string_arb(fake_hdc) };
+  println!(&quot;&gt; Extension String Result: {:?}&quot;, res);
+
+  // cleanup the fake stuff
+</code></pre></pre>
+<p>And with a little iterator magic:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let extensions: Vec&lt;String&gt; =
+    unsafe { wgl_get_extension_string_arb(fake_hdc) }
+      .map(|s| {
+        s.split(' ').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect()
+      })
+      .unwrap_or(Vec::new());
+  println!(&quot;&gt; Extensions: {:?}&quot;, extensions);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Which prints out alright:</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cargo run
+    Finished dev [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target\debug\triangle-from-scratch.exe`        
+&gt; Got Pixel Format: PIXELFORMATDESCRIPTOR { nSize: 40, nVersion: 1, dwFlags: 33317, iPixelType: 0, cColorBits: 32, cRedBits: 8, cRedShift: 16, cGreenBits: 8, cGreenShift: 8, cBlueBits: 8, cBlueShift: 0, cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 64, cAccumRedBits: 16, cAccumGreenBits: 16, cAccumBlueBits: 16, cAccumAlphaBits: 16, cDepthBits: 24, cStencilBits: 8, cAuxBuffers: 4, iLayerType: 0, bReserved: 0, dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0 }
+&gt; Extensions: [&quot;WGL_ARB_buffer_region&quot;, &quot;WGL_ARB_create_context&quot;, &quot;WGL_ARB_create_context_no_error&quot;, &quot;WGL_ARB_create_context_profile&quot;, &quot;WGL_ARB_create_context_robustness&quot;, &quot;WGL_ARB_context_flush_control&quot;, &quot;WGL_ARB_extensions_string&quot;, &quot;WGL_ARB_make_current_read&quot;, &quot;WGL_ARB_multisample&quot;, &quot;WGL_ARB_pbuffer&quot;, &quot;WGL_ARB_pixel_format&quot;, &quot;WGL_ARB_pixel_format_float&quot;, &quot;WGL_ARB_render_texture&quot;, &quot;WGL_ATI_pixel_format_float&quot;, &quot;WGL_EXT_colorspace&quot;, &quot;WGL_EXT_create_context_es_profile&quot;, &quot;WGL_EXT_create_context_es2_profile&quot;, &quot;WGL_EXT_extensions_string&quot;, &quot;WGL_EXT_framebuffer_sRGB&quot;, &quot;WGL_EXT_pixel_format_packed_float&quot;, &quot;WGL_EXT_swap_control&quot;, &quot;WGL_EXT_swap_control_tear&quot;, &quot;WGL_NVX_DX_interop&quot;, &quot;WGL_NV_DX_interop&quot;, &quot;WGL_NV_DX_interop2&quot;, &quot;WGL_NV_copy_image&quot;, &quot;WGL_NV_delay_before_swap&quot;, &quot;WGL_NV_float_buffer&quot;, &quot;WGL_NV_multisample_coverage&quot;, &quot;WGL_NV_render_depth_texture&quot;, &quot;WGL_NV_render_texture_rectangle&quot;]
+</code></pre>
+<h2><a class="header" href="#grab-some-function-pointers" id="grab-some-function-pointers">Grab Some Function Pointers</a></h2>
+<p>Now that we can see what WGL extensions are available,
+we can grab out some function pointers.</p>
+<p>Here's the key part:
+<em>We don't call them yet.</em></p>
+<p>This is another silly thing, but it's true.
+We just get the function pointers for now.
+Then we destroy the fake stuff,
+then we use the function pointers that we stored to make our real stuff.</p>
+<p>We want to get function pointers for:</p>
+<ul>
+<li><a href="https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt">wglChoosePixelFormatARB</a>
+(provided by <code>WGL_ARB_pixel_format</code>) is required to choose advanced pixel formats (such as multisampling).</li>
+<li><a href="https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt">wglCreateContextAttribsARB</a>
+(provided by <code>WGL_ARB_create_context</code>) is required to make GL contexts with API versions above 1.1.</li>
+<li><a href="https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt">wglSwapIntervalEXT</a>
+(provided by <code>WGL_EXT_swap_control</code>) is <em>not</em> required but is very handy, because it lets you enable
+<a href="https://en.wikipedia.org/wiki/Screen_tearing#Vertical_synchronization">vsync</a></li>
+</ul>
+<p>These are our core three extension functions.
+Many of the extensions listed above don't add new functions,
+they just extend what values you can send to these three.</p>
+<p>First we declare the types we'll be using:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// lib.rs
+
+/// Type for [wglChoosePixelFormatARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt)
+pub type wglChoosePixelFormatARB_t = Option&lt;
+  unsafe extern &quot;system&quot; fn(
+    hdc: HDC,
+    piAttribIList: *const c_int,
+    pfAttribFList: *const f32,
+    nMaxFormats: UINT,
+    piFormats: *mut c_int,
+    nNumFormats: *mut UINT,
+  ) -&gt; BOOL,
+&gt;;
+pub type FLOAT = c_float;
+pub type c_float = f32;
+/// Type for [wglCreateContextAttribsARB](https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+pub type wglCreateContextAttribsARB_t = Option&lt;
+  unsafe extern &quot;system&quot; fn(
+    hDC: HDC,
+    hShareContext: HGLRC,
+    attribList: *const c_int,
+  ) -&gt; HGLRC,
+&gt;;
+/// Type for [wglSwapIntervalEXT](https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt)
+pub type wglSwapIntervalEXT_t =
+  Option&lt;unsafe extern &quot;system&quot; fn(interval: c_int) -&gt; BOOL&gt;;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then we store the function pointers:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  println!(&quot;&gt; Extensions: {:?}&quot;, extensions);
+
+  let wglChoosePixelFormatARB: wglChoosePixelFormatARB_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!(&quot;wglChoosePixelFormatARB&quot;)).unwrap(),
+    )
+  };
+  let wglCreateContextAttribsARB: wglCreateContextAttribsARB_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!(&quot;wglCreateContextAttribsARB&quot;)).unwrap(),
+    )
+  };
+  let wglSwapIntervalEXT: wglSwapIntervalEXT_t = unsafe {
+    core::mem::transmute(
+      wgl_get_proc_address(c_str!(&quot;wglSwapIntervalEXT&quot;)).unwrap(),
+    )
+  };
+
+  // cleanup the fake stuff
+<span class="boring">}
+</span></code></pre></pre>
+<p>Alright, I think we're done with all this fake context stuff.
+We can move on to setting up our real context.</p>
+<p>Actually, let's briefly put all that stuff into a single library function.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Grabs out the stuff you'll need to have fun with WGL.
+pub fn get_wgl_basics() -&gt; Result&lt;
+  (
+    Vec&lt;String&gt;,
+    wglChoosePixelFormatARB_t,
+    wglCreateContextAttribsARB_t,
+    wglSwapIntervalEXT_t,
+  ),
+  Win32Error,
+&gt; {
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>It's just moving all the stuff you've seen over,
+and then putting in a lot of drop guard types like we saw in format message.
+There's not much new to talk about, so we'll keep moving.</p>
+<h2><a class="header" href="#our-new-window-setup" id="our-new-window-setup">Our New Window Setup</a></h2>
+<p>Alright, so now let's get some useful stuff with our window:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct WindowData {
+  hdc: HDC,
+}
+impl Default for WindowData {
+  fn default() -&gt; Self {
+    unsafe { core::mem::zeroed() }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Since it's going to be connected to a GL context now we don't want to get and free it with every <code>WM_PAINT</code>.
+Instead, we'll get it once after the window is created,
+then stuff it into the WindowData field and leave it there.
+The <code>WM_DESTROY</code> can clean it up before destroying the window itself.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">// fn main
+  let lparam: *mut WindowData = Box::leak(Box::new(WindowData::default()));
+  let hwnd = unsafe {
+    create_app_window(
+      sample_window_class,
+      &quot;Sample Window Name&quot;,
+      None,
+      [800, 600],
+      lparam.cast(),
+    )
+  }
+  .unwrap();
+  let hdc = unsafe { get_dc(hwnd) }.unwrap();
+  unsafe { (*lparam).hdc = hdc };
+</code></pre></pre>
+<p>And we need to adjust our window procedure:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    WM_DESTROY =&gt; {
+      match get_window_userdata::&lt;WindowData&gt;(hwnd) {
+        Ok(ptr) if !ptr.is_null() =&gt; {
+          let window_data = Box::from_raw(ptr);
+          let _ = release_dc(hwnd, window_data.hdc);
+          println!(&quot;Cleaned up the box.&quot;);
+        }
+        Ok(_) =&gt; {
+          println!(&quot;userdata ptr is null, no cleanup&quot;)
+        }
+        Err(e) =&gt; {
+          println!(&quot;Error while getting the userdata ptr for cleanup: {}&quot;, e)
+        }
+      }
+      post_quit_message(0);
+    }
+    WM_PAINT =&gt; match get_window_userdata::&lt;WindowData&gt;(hwnd) {
+      Ok(ptr) if !ptr.is_null() =&gt; {
+        // TODO: real painting, eventually
+        println!(&quot;painting!&quot;);
+      }
+      Ok(_) =&gt; {
+        println!(&quot;userdata ptr is null&quot;)
+      }
+      Err(e) =&gt; {
+        println!(&quot;Error while getting the userdata ptr: {}&quot;, e)
+      }
+    },
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#finally-we-call-wglchoosepixelformatarb" id="finally-we-call-wglchoosepixelformatarb">Finally We Call wglChoosePixelFormatARB</a></h2>
+<p>We're finally ready to call our <a href="https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt">wglChoosePixelFormatARB</a> pointer.</p>
+<p>This one is fairly flexible.
+We can pass a list of integer (key,value) pairs,
+a list of float (key,value) pairs,
+and the space to get some outputs.</p>
+<p>As far as I can tell,
+there's no reason in the basic extension for any float attributes to be specified.
+Other extensions might add options in the future,
+but there's nothing for us there right now.
+The int attributes, on the other hand, have many interesting things.
+For both lists, the function knows the list is over when it sees a 0 in the key position.
+Also for both lists, we can pass a null instead of a list pointer.</p>
+<p>Meanwhile, we can have more than one output if we want.
+We pass in a count, and a pointer to an array of that length.
+The function will fill in as many array values as it can.
+There's also a pointer to an integer that we pass,
+and it gets written the number of outputs that were found.
+This could be the full array, but it could also be less than the full array.</p>
+<p>Interestingly, using <code>min_const_generics</code> might work here.
+We could make the array of values to return be a const generic.
+But we only actually need <em>one</em> pixel format,
+so we'll just pick the first format they give us.</p>
+<p>The wrapper function for this is not complex, but it is <em>tall</em>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Arranges the data for calling a [`wglChoosePixelFormatARB_t`] procedure.
+///
+/// * Inputs are slices of [key, value] pairs.
+/// * Input slices **can** be empty.
+/// * Non-empty slices must have a zero value in the key position of the final
+///   pair.
+pub unsafe fn do_wglChoosePixelFormatARB(
+  f: wglChoosePixelFormatARB_t, hdc: HDC, int_attrs: &amp;[[c_int; 2]],
+  float_attrs: &amp;[[FLOAT; 2]],
+) -&gt; Result&lt;c_int, Win32Error&gt; {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match int_attrs.last() {
+    Some([k, _v]) =&gt; {
+      if *k == 0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None =&gt; null(),
+  };
+  let f_ptr = match float_attrs.last() {
+    Some([k, _v]) =&gt; {
+      if *k == 0.0 {
+        int_attrs.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None =&gt; null(),
+  };
+  let mut out_format = 0;
+  let mut out_format_count = 0;
+  let b = (f.ok_or(app_err)?)(
+    hdc,
+    i_ptr.cast(),
+    f_ptr.cast(),
+    1,
+    &amp;mut out_format,
+    &amp;mut out_format_count,
+  );
+  if b != 0 &amp;&amp; out_format_count == 1 {
+    Ok(out_format)
+  } else {
+    Err(get_last_error())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now the way we call this thing is that we're gonna have some &quot;base&quot; requirements,
+then we can look at the extensions and maybe ask for a little more if it's available,
+then we finalize the list by putting in that zero.</p>
+<p>After we get the pixel format index,
+we can't set it directly, because we need a <code>PIXELFORMATDESCRIPTOR</code> to go with it.
+First we use <code>describe_pixel_format</code>, then we can <code>set_pixel_format</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  // base criteria
+  let mut int_attribs = vec![
+    [WGL_DRAW_TO_WINDOW_ARB, true as _],
+    [WGL_SUPPORT_OPENGL_ARB, true as _],
+    [WGL_DOUBLE_BUFFER_ARB, true as _],
+    [WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB],
+    [WGL_COLOR_BITS_ARB, 32],
+    [WGL_DEPTH_BITS_ARB, 24],
+    [WGL_STENCIL_BITS_ARB, 8],
+  ];
+  // if sRGB is supported, ask for that
+  if wgl_extensions.iter().any(|s| s == &quot;WGL_EXT_framebuffer_sRGB&quot;) {
+    int_attribs.push([WGL_FRAMEBUFFER_SRGB_CAPABLE_EXT, true as _]);
+  };
+  // let's have some multisample if we can get it
+  if wgl_extensions.iter().any(|s| s == &quot;WGL_ARB_multisample&quot;) {
+    int_attribs.push([WGL_SAMPLE_BUFFERS_ARB, 1]);
+  };
+  // finalize our list
+  int_attribs.push([0, 0]);
+  // choose a format, get the PIXELFORMATDESCRIPTOR, and set it.
+  let pix_format = unsafe {
+    do_wglChoosePixelFormatARB(wglChoosePixelFormatARB, hdc, &amp;int_attribs, &amp;[])
+  }
+  .unwrap();
+  let pfd = unsafe { describe_pixel_format(hdc, pix_format) }.unwrap();
+  unsafe { set_pixel_format(hdc, pix_format, &amp;pfd) }.unwrap();
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#open-that-stupid-context-already-wglcreatecontextattribsarb" id="open-that-stupid-context-already-wglcreatecontextattribsarb">Open That Stupid Context Already (wglCreateContextAttribsARB)</a></h2>
+<p>Now that we have a pixel format set, we can create a context.</p>
+<p>To create an advanced context,
+we call <a href="https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_create_context.txt">wglCreateContextAttribsARB</a>.</p>
+<p>It's not too different from the last function we used.
+We pass a list of (key,value) pairs in,
+with a 0 key to signal the final entry.</p>
+<p>The wrapper for this should look familiar, it's the same basic idea:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Arranges the data for calling a [`wglCreateContextAttribsARB_t`] procedure.
+///
+/// * The input slice consists of [key, value] pairs.
+/// * The input slice **can** be empty.
+/// * Any non-empty input must have zero as the key value of the last position.
+pub unsafe fn do_wglCreateContextAttribsARB(
+  f: wglCreateContextAttribsARB_t, hdc: HDC, hShareContext: HGLRC,
+  attribList: &amp;[[i32; 2]],
+) -&gt; Result&lt;HGLRC, Win32Error&gt; {
+  let app_err = Win32Error(Win32Error::APPLICATION_ERROR_BIT);
+  let i_ptr = match attribList.last() {
+    Some([k, _v]) =&gt; {
+      if *k == 0 {
+        attribList.as_ptr()
+      } else {
+        return Err(app_err);
+      }
+    }
+    None =&gt; null(),
+  };
+  let hglrc = (f.ok_or(app_err)?)(hdc, hShareContext, i_ptr.cast());
+  if hglrc.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hglrc)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And this time we don't even have to use a vec to store all our settings.
+We don't have a dynamic number of settings, so a plain array will do fine.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  // now we create a context.
+  const FLAGS: c_int = WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB
+    | if cfg!(debug_assertions) { WGL_CONTEXT_DEBUG_BIT_ARB } else { 0 };
+  let hglrc = unsafe {
+    do_wglCreateContextAttribsARB(
+      wglCreateContextAttribsARB,
+      hdc,
+      null_mut(),
+      &amp;[
+        [WGL_CONTEXT_MAJOR_VERSION_ARB, 3],
+        [WGL_CONTEXT_MINOR_VERSION_ARB, 3],
+        [WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB],
+        [WGL_CONTEXT_FLAGS_ARB, FLAGS],
+        [0, 0],
+      ],
+    )
+  }
+  .unwrap();
+  unsafe { wgl_make_current(hdc, hglrc) }.unwrap();
+  unsafe { (*lparam).hglrc = hglrc };
+<span class="boring">}
+</span></code></pre></pre>
+<p>I'm here selecting OpenGL 3.3 Core,
+because some day,
+when this tutorial is finally over,
+I'm going to say,
+&quot;and now you can learn how to do the rest of OpenGL by going over to <a href="https://LearnOpenGL.com">LearnOpenGL.com</a>!&quot;.
+And they teach 3.3 Core.
+If you don't yet know about OpenGL versions,
+that's the oldest version of the &quot;newer&quot; set of OpenGL versions.
+If you do know enough about OpenGL to have an opinion on what other version to use,
+you could also use any other version as well.</p>
+<h2><a class="header" href="#loadlibraryw" id="loadlibraryw">LoadLibraryW</a></h2>
+<p>On both MSDN and the OpenGL Wiki it says that any function that's in <code>OpenGL32.dll</code>
+is <em>not</em> able to be looked up with <code>wglGetProcAddress</code>.
+Instead you have to use the <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress">GetProcAddress</a> function.
+To use that, we need to have a loaded library.
+The library loading itself uses a textual name, so it has <code>A</code> and <code>W</code> versions.
+As usual, we want the <code>W</code> version, so we want <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw">LoadLibraryW</a>.
+When we're all done with the library we'll use <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary">FreeLibrary</a>
+to close out the library.
+The <code>FreeLibrary</code> call just takes the handle to the module, so it doesn't have <code>A</code> and <code>W</code> variants.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Pointer to a procedure of unknown type.
+pub type FARPROC = *mut c_void;
+
+#[link(name = &quot;Kernel32&quot;)]
+extern &quot;system&quot; {
+  /// [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+  pub fn LoadLibraryW(lpLibFileName: LPCWSTR) -&gt; HMODULE;
+
+  /// [`FreeLibrary`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary)
+  pub fn FreeLibrary(hLibModule: HMODULE) -&gt; BOOL;
+
+  /// [`GetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress)
+  pub fn GetProcAddress(hModule: HMODULE, lpProcName: LPCSTR) -&gt; FARPROC;
+}
+
+/// Loads a dynamic library.
+///
+/// The precise details of how the library is searched for depend on the input
+/// string.
+///
+/// See [`LoadLibraryW`](https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw)
+pub fn load_library(name: &amp;str) -&gt; Result&lt;HMODULE, Win32Error&gt; {
+  let name_null = wide_null(name);
+  // Safety: the input pointer is to a null-terminated string
+  let hmodule = unsafe { LoadLibraryW(name_null.as_ptr()) };
+  if hmodule.is_null() {
+    Err(get_last_error())
+  } else {
+    Ok(hmodule)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Also, if you're wondering why <code>GetProcAddress</code> doesn't have <code>A</code> and <code>W</code> versions,
+it's because C function names can only ever be ANSI content.</p>
+<p>Now we can put an <code>HMODULE</code> into our WindowData struct.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct WindowData {
+  hdc: HDC,
+  hglrc: HGLRC,
+  opengl32: HMODULE,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then we can load a module and assign it.
+We can do this basically anywhere in the startup process,
+but it's emotionally connected to using GL,
+so we'll do it right after we make our context.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  unsafe { wgl_make_current(hdc, hglrc) }.unwrap();
+  unsafe { (*lparam).hglrc = hglrc };
+
+  let opengl32 = load_library(&quot;opengl32.dll&quot;).unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we have to properly close out the module when we're cleaning up the window.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    WM_DESTROY =&gt; {
+      println!(&quot;WM_DESTROY&quot;);
+      match get_window_userdata::&lt;WindowData&gt;(hwnd) {
+        Ok(ptr) if !ptr.is_null() =&gt; {
+          let window_data = Box::from_raw(ptr);
+          FreeLibrary(window_data.opengl32);
+          wgl_delete_context(window_data.hglrc)
+            .unwrap_or_else(|e| eprintln!(&quot;GL Context deletion error: {}&quot;, e));
+          // ...
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#what-do-we-load" id="what-do-we-load">What Do We Load?</a></h2>
+<p>Now that we can load up GL functions, what do we want to load?
+And what are the type signatures?</p>
+<p>Well, for that, we could look at our old friend <a href="https://github.com/KhronosGroup/OpenGL-Registry/blob/master/xml/gl.xml">gl.xml</a>.
+It describes the entire GL API in a structured way.</p>
+<p>However, that's overkill for what we need at the moment.
+We only need to use like two functions to just clear the screen to a color,
+so instead we'll just check the online manual pages.
+What we're after for is <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClearColor.xhtml">glClearColor</a>
+and also <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClear.xhtml">glClear</a>.</p>
+<p>What's a GLfloat and a GLbitfield? For that we can look in <code>gl.xml</code>.
+If we look around we'll eventually find these entries:</p>
+<pre><code class="language-xml">&lt;type&gt;typedef unsigned int &lt;name&gt;GLbitfield&lt;/name&gt;;&lt;/type&gt;
+
+&lt;type requires=&quot;khrplatform&quot;&gt;typedef khronos_float_t &lt;name&gt;GLfloat&lt;/name&gt;;&lt;/type&gt;
+</code></pre>
+<p>Cool.
+Hmm, we need a new library module for this.
+These definitions will be common to our GL usage across all the platforms,
+so let's start a new file for that.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// lib.rs
+
+//! Library for the [Triangle From Scratch][tfs] project.
+//!
+//! [tfs]: https://rust-tutorials.github.io/triangle-from-scratch/
+
+mod macros;
+
+pub mod util;
+
+#[cfg(windows)]
+pub mod win32;
+// this is so that gl will see the C types
+#[cfg(windows)]
+use win32::*;
+
+pub mod gl;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then our fun new module</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span>#![allow(non_camel_case_types)]
+
+<span class="boring">fn main() {
+</span>use super::*;
+
+/// From `gl.xml`
+pub type GLbitfield = c_uint;
+
+/// From `gl.xml`
+pub type GLfloat = c_float;
+
+/// See [`glClearColor`](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClearColor.xhtml)
+pub type glClearColor_t = Option&lt;
+  unsafe extern &quot;system&quot; fn(
+    red: GLfloat,
+    green: GLfloat,
+    blue: GLfloat,
+    alpha: GLfloat,
+  ),
+&gt;;
+
+/// See [`glClear`](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glClear.xhtml)
+pub type glClear_t = Option&lt;unsafe extern &quot;system&quot; fn(mask: GLbitfield)&gt;;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Hmm, but where do we get the values for the <code>GL_COLOR_BUFFER_BIT</code> and so on?
+That's also stored in <code>gl.xml</code>.</p>
+<p>If you search for <code>GL_COLOR_BUFFER_BIT</code> you'll see a lot of &quot;group&quot; info,
+but that's old and not what we want.
+Eventually if you keep looking you'll see a line like this:</p>
+<pre><code class="language-xml">&lt;enum value=&quot;0x00004000&quot; name=&quot;GL_COLOR_BUFFER_BIT&quot; group=&quot;ClearBufferMask,AttribMask&quot;/&gt;
+</code></pre>
+<p>This is good, this is good.</p>
+<p>So what are the groups?
+Well, there's been a heroic effort by the GL maintainers to get the <code>gl.xml</code> descriptions
+of functions to be <em>slightly</em> better documented by giving each function input a group,
+and then each constant lists what groups it's in.</p>
+<p>If we look at the XML definition for <code>glClear</code>:</p>
+<pre><code class="language-xml">&lt;command&gt;
+  &lt;proto&gt;void &lt;name&gt;glClear&lt;/name&gt;&lt;/proto&gt;
+  &lt;param group=&quot;ClearBufferMask&quot;&gt;&lt;ptype&gt;GLbitfield&lt;/ptype&gt; &lt;name&gt;mask&lt;/name&gt;&lt;/param&gt;
+  &lt;glx type=&quot;render&quot; opcode=&quot;127&quot;/&gt;
+&lt;/command&gt;
+</code></pre>
+<p>See, that mask argument should be a constant in the &quot;ClearBufferMask&quot; group.
+And <code>GL_COLOR_BUFFER_BIT</code> is in the &quot;ClearBufferMask&quot; group,
+so it would be a correct call to make.</p>
+<p>This is just some info to try and help static checkers,
+but it's still pretty loosey-goosey,
+and you don't really have to pay much attention if you don't care to.
+We won't be following the group info while we're doing this by hand.
+If we make a fancy generator then that might care to track the group info.</p>
+<p>So we add some fields to our window data:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct WindowData {
+  hdc: HDC,
+  hglrc: HGLRC,
+  opengl32: HMODULE,
+  gl_clear: glClear_t,
+  gl_clear_color: glClearColor_t,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then we add some functions to our window data:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl WindowData {
+  pub fn gl_get_proc_address(&amp;self, name: &amp;[u8]) -&gt; *mut c_void {
+    assert!(*name.last().unwrap() == 0);
+    let p = unsafe { wglGetProcAddress(name.as_ptr().cast()) };
+    match p as usize {
+      0 | 1 | 2 | 3 | usize::MAX =&gt; unsafe {
+        GetProcAddress(self.opengl32, name.as_ptr().cast())
+      },
+      _ =&gt; p,
+    }
+  }
+  #[rustfmt::skip]
+  pub unsafe fn load_gl_functions(&amp;mut self) {
+    self.gl_clear = core::mem::transmute(self.gl_get_proc_address(c_str!(&quot;glClear&quot;)));
+    self.gl_clear_color = core::mem::transmute(self.gl_get_proc_address(c_str!(&quot;glClearColor&quot;)));
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then, in addition to simply setting the loaded library,
+we also tell the window data to do its loading process:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let opengl32 = load_library(&quot;opengl32.dll&quot;).unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+  unsafe { (*lparam).load_gl_functions() };
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#clear-the-screen" id="clear-the-screen">Clear The Screen</a></h2>
+<p>To clear the screen's color we call <code>glClear(GL_COLOR_BUFFER_BIT)</code>.
+We can also set the color we want to clear things to.
+By default it'll clear to black,
+but we can select any color we want.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    WM_PAINT =&gt; match get_window_userdata::&lt;WindowData&gt;(hwnd) {
+      Ok(ptr) if !ptr.is_null() =&gt; {
+        let window_data = ptr.as_mut().unwrap();
+        (window_data.gl_clear_color.unwrap())(0.6, 0.7, 0.8, 1.0);
+        (window_data.gl_clear.unwrap())(GL_COLOR_BUFFER_BIT);
+      }
+<span class="boring">}
+</span></code></pre></pre>
+<p>And there's one more step!</p>
+<p>We need to call <a href="https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers">SwapBuffers</a>
+on our HDC to tell windows to swap the front and back buffers.</p>
+<p>Declare it.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// in the library's win32.rs
+
+#[link(name = &quot;Gdi32&quot;)]
+extern &quot;system&quot; {
+  /// [`SwapBuffers`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-swapbuffers)
+  pub fn SwapBuffers(Arg1: HDC) -&gt; BOOL;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And then call it.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    WM_PAINT =&gt; match get_window_userdata::&lt;WindowData&gt;(hwnd) {
+      Ok(ptr) if !ptr.is_null() =&gt; {
+        let window_data = ptr.as_mut().unwrap();
+        (window_data.gl_clear_color.unwrap())(0.6, 0.7, 0.8, 1.0);
+        (window_data.gl_clear.unwrap())(GL_COLOR_BUFFER_BIT);
+        SwapBuffers(window_data.hdc);
+      }
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we finally get a nice, soft, blue sort of color in our window.</p>
+<h2><a class="header" href="#swap-interval" id="swap-interval">Swap Interval</a></h2>
+<p>Oh heck, we didn't set a swap interval!</p>
+<p>Remember how we loaded up a pointer for <a href="https://www.khronos.org/registry/OpenGL/extensions/EXT/WGL_EXT_swap_control.txt">wglSwapIntervalEXT</a>,
+and then we didn't use it at all?
+Uh, I guess we can call it after we load the GL functions.
+We just need to set it once and it'll stay that way for the rest of the program.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>  let opengl32 = load_library(&quot;opengl32.dll&quot;).unwrap();
+  unsafe { (*lparam).opengl32 = opengl32 };
+  unsafe { (*lparam).load_gl_functions() };
+
+  // Enable &quot;adaptive&quot; vsync if possible, otherwise normal vsync
+  if wgl_extensions.iter().any(|s| s == &quot;WGL_EXT_swap_control_tear&quot;) {
+    unsafe { (wglSwapIntervalEXT.unwrap())(-1) };
+  } else {
+    unsafe { (wglSwapIntervalEXT.unwrap())(1) };
+  }
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, any time we call <code>SwapBuffers</code>,
+the system will sync the swap with the vertical trace of the screen,
+and it'll wait at least 1 full monitor cycle between each swap.</p>
+<p>If we have the adaptive vsync available, it'll still wait at least 1 frame,
+but if we're only slightly off from the correct time, it'll swap immediately.
+This reduces visual stutter by allowing occasional visual tearing.
+Neither of those are great, but sometimes the program will struggle to keep up.
+Usually the vsync mode is a user setting within a game or whatever,
+so you can just let users pick how they want to handle things.</p>
+<h2><a class="header" href="#are-we-done" id="are-we-done">Are We Done?</a></h2>
+<p>Yeah, basically!</p>
+<p>You understand the basics of how we find a GL function type,
+lookup the function to load it into the program at runtime,
+and call it to make something happen.</p>
+<blockquote>
+<p>and now you can learn how to do the rest of OpenGL by going over to <a href="https://LearnOpenGL.com">LearnOpenGL.com</a>!</p>
+</blockquote>
+<p>I promised I'd say that to you one day.</p>
+<p>No, but really, <em>the basics</em> have all been explained.
+There's a lot of stuff that's still clunky as heck,
+but it all works.</p>
+<p>What's certainly left to do is make it more ergonomic.
+However, we're already at just over 9300 words.
+We might talk about ways to make GL nice to work with in another lesson some day.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="../loading_opengl/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="../appendix/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../loading_opengl/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="../appendix/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html" class="active"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">2.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">2.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html" class="active"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">3.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">3.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -1039,7 +1039,8 @@ pub fn set_last_error(e: Win32Error) {
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>Now we can make an unsafe function for setting the userdata pointer:</p>
+<p>Now we can make an unsafe function for setting the userdata pointer.
+We'll make it generic over whatever pointer type you want:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1048,9 +1049,9 @@ pub fn set_last_error(e: Win32Error) {
 /// **Returns:** The previous userdata pointer.
 ///
 /// [`SetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw)
-pub unsafe fn set_window_userdata(
-  hwnd: HWND, ptr: *mut c_void,
-) -&gt; Result&lt;*mut c_void, Win32Error&gt; {
+pub unsafe fn set_window_userdata&lt;T&gt;(
+  hwnd: HWND, ptr: *mut T,
+) -&gt; Result&lt;*mut T, Win32Error&gt; {
   set_last_error(Win32Error(0));
   let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
   if out == 0 {
@@ -1059,10 +1060,10 @@ pub unsafe fn set_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 <span class="boring">}
@@ -1078,12 +1079,16 @@ pub unsafe fn set_window_userdata(
       if createstruct.is_null() {
         return 0;
       }
-      let boxed_i32_ptr = (*createstruct).lpCreateParams;
-      return set_window_userdata(hwnd, boxed_i32_ptr).is_ok() as LRESULT;
+      let ptr = (*createstruct).lpCreateParams as *mut i32;
+      return set_window_userdata::&lt;i32&gt;(hwnd, ptr).is_ok() as LRESULT;
     }
 <span class="boring">}
 </span></code></pre></pre>
-<p>The getter for the userdata pointer is basically the same deal:</p>
+<p>The getter for the userdata pointer is basically the same deal.
+Again, we're making it generic so you can ask for the pointer as pointing to any type,
+and then it'll do the cast for you.
+If you <em>forget</em> to say a type you'll get a type inference error,
+which is good in this case, because you don't want to forget the type:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1092,9 +1097,7 @@ pub unsafe fn set_window_userdata(
 /// **Returns:** The userdata pointer.
 ///
 /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
-pub unsafe fn get_window_userdata(
-  hwnd: HWND,
-) -&gt; Result&lt;*mut c_void, Win32Error&gt; {
+pub unsafe fn get_window_userdata&lt;T&gt;(hwnd: HWND) -&gt; Result&lt;*mut T, Win32Error&gt; {
   set_last_error(Win32Error(0));
   let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
   if out == 0 {
@@ -1103,10 +1106,10 @@ pub unsafe fn get_window_userdata(
     if last_error.0 != 0 {
       Err(last_error)
     } else {
-      Ok(out as *mut c_void)
+      Ok(out as *mut T)
     }
   } else {
-    Ok(out as *mut c_void)
+    Ok(out as *mut T)
   }
 }
 <span class="boring">}
@@ -1117,7 +1120,7 @@ pub unsafe fn get_window_userdata(
 </span><span class="boring">fn main() {
 </span>// in `window_procedure`
     WM_DESTROY =&gt; {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::&lt;i32&gt;(hwnd) {
         Ok(ptr) if !ptr.is_null() =&gt; {
           Box::from_raw(ptr);
           println!(&quot;Cleaned up the box.&quot;);
@@ -1132,9 +1135,8 @@ pub unsafe fn get_window_userdata(
       PostQuitMessage(0);
     }
     WM_PAINT =&gt; {
-      match get_window_userdata(hwnd) {
+      match get_window_userdata::&lt;i32&gt;(hwnd) {
         Ok(ptr) if !ptr.is_null() =&gt; {
-          let ptr = ptr as *mut i32;
           println!(&quot;Current ptr: {}&quot;, *ptr);
           *ptr += 1;
         }
@@ -1412,7 +1414,7 @@ Naw, but I think it's good enough for now.</p>
                         
 
                         
-                            <a rel="next" href="../appendix/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../loading_opengl/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -1430,7 +1432,7 @@ Naw, but I think it's good enough for now.</p>
                 
 
                 
-                    <a rel="next" href="../appendix/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../loading_opengl/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

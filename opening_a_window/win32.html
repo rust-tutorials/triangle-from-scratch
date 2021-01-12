@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html" class="active"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">2.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">2.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html" class="active"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">3.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">3.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -182,7 +182,8 @@ that we just found...</p>
 <ul>
 <li>Every window needs a window class.</li>
 <li>A window class is registered with the OS at runtime.</li>
-<li>We need to fill in a <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa">WNDCLASSA</a> (or <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">WNDCLASSW</a>)</li>
+<li>We need to fill in a <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa">WNDCLASSA</a>
+(or <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">WNDCLASSW</a>)</li>
 </ul>
 <p>Whoa, slow down, hold on, what's this structure thing? And why are there two versions?</p>
 <h3><a class="header" href="#ansi-and-wide" id="ansi-and-wide">ANSI and Wide</a></h3>
@@ -1349,13 +1350,39 @@ instead we'll have to grep the windows includes to see what's happening.</p>
 10.0.16299.0\shared\ks.h
 4464:#define MAKEINTRESOURCE( res ) ((ULONG_PTR) (USHORT) res)
 </code></pre>
-<p>Hm, so.. the input value is cast to a <code>WORD</code>,
+<p>This is a <code>#define</code>, which technically <em>isn't</em> C code.
+It's a declaration for a thing called the &quot;C Pre-Processor&quot;,
+which is a tool that runs over a source file <em>before</em> the text gets to the compiler itself.
+In the case of a <code>#define</code>, the general form is <code>#define original replacement</code>.
+Any occurrence of the <code>original</code> is replaced (textually) with <code>replacement</code>.
+So <code>#define MAKEINTRESOURCE  MAKEINTRESOURCEW</code> makes all occurrences of <code>MAKEINTRESOURCE</code> become <code>MAKEINTRESOURCEW</code>,
+before the compiler even sees the source code.
+Since there are two different <code>#define</code> statements for <code>MAKEINTRESOURCE</code> we can assume that they're conditional,
+and a given program would get one or the other during compilation.
+If you go investigate <code>WinUser.h</code> you'll see that this is the case,
+but I don't really want to quote source code blocks from <em>Microsoft</em> files,
+because I'm not clear on how big of a quote block would be &quot;fair use&quot;.</p>
+<p>Anyway, if there's input arguments on the original then they can be written to accept an expression.
+And then the expansion puts the expression in somewhere.
+That's how <code>MAKEINTRESOURCEW(i)</code> works,
+anything inside the parentheses becomes <code>i</code> in the replacement expression.
+<code>MAKEINTRESOURCEW(2+2)</code> would become <code>((LPWSTR)((ULONG_PTR)((WORD)(2+2))))</code>.</p>
+<p>Finally, if there's a backslash at the end of a <code>#define</code> line it will continue into the next line.
+That's not the case here,
+but more complicated defines can end up using backslashes,
+so you should just be aware if you're trying to read a lot of C code.</p>
+<p>In C these are called &quot;macros&quot;,
+but because they're so different from how a macro works in Rust,
+I'll try to just call them a <code>#define</code>.</p>
+<p>Back to examining <code>MAKEINTRESOURCE</code> itself.
+The input value is cast to a <code>WORD</code>,
 then cast directly to a <code>ULONG_PTR</code>,
 then cast directly to a string pointer (either ansi or wide).
-That's not too hard at all.</p>
-<p>We <em>could</em> do this as a Rust macro,
-but I feel like we might want to use a <code>const fn</code> instead.
-I just like having the types be a little more checked when possible.</p>
+That's not too hard for us to do.</p>
+<p>Since this was done as a C-style macro,
+you might think that we'd want to do a Rust-style macro too.
+However, I think we might want to use a <code>const fn</code> instead.
+I just like having the type checking when possible.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
