@@ -1,5 +1,6 @@
 [package]
 name = "triangle-from-scratch"
+description = "An educational series on how to do stuff yourself."
 version = "0.1.0"
 authors = ["Lokathor <zefria@gmail.com>"]
 edition = "2018"
