@@ -3710,7 +3710,7 @@ pub const WS_CLIPCHILDREN: u32 = 0x02000000;
 /// neighboring child window.
 pub const WS_CLIPSIBLINGS: u32 = 0x04000000;
 
-pub unsafe fn create_app_window() {
+pub unsafe fn create_app_window(/* ... */) {
   // ...
   let hwnd = CreateWindowExW(
     WS_EX_APPWINDOW | WS_EX_OVERLAPPEDWINDOW,
