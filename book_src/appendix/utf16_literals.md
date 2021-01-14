@@ -490,3 +490,11 @@ fn test_utf16_null() {
 ```
 
 All very good, I hope you had fun with this one.
+
+## Crates
+
+If you want this sort of thing at home there's already some crates to do it:
+* [utf16_lit](https://docs.rs/utf16_lit)
+  (Disclosure: I made this one. However, I also write this book, so I get to list my own crate first)
+* [wchar](https://docs.rs/wchar)
+* [utf16_literal](https://docs.rs/utf16_literal)
