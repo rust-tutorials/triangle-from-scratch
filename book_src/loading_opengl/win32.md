@@ -41,7 +41,7 @@ we need to set `CS_OWNDC` in the `style` field so that each window has its own d
 If we search for `CS_OWNDC` [in the MSDN pages](https://docs.microsoft.com/en-us/search/?scope=Desktop&terms=CS_OWNDC),
 it leads us to the [Window Class Styles](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles) page.
 Ah, so many things to look at.
-We know we want `CS_OWNDC`,
+We know we want `CS_OWNDC` (Class Style: Own Device Context),
 but if we glance at the other options there's mostly stuff we don't need.
 Interestingly, it looks like maybe you need to enable double-click support on your window if you want it?
 We don't need that now, but just something to remember if you want it later on.
