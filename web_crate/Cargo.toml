@@ -5,4 +5,8 @@ authors = ["Lokathor <zefria@gmail.com>"]
 edition = "2018"
 license = "Zlib OR Apache-2.0 OR MIT"
 
-[dependencies]
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = "thin"

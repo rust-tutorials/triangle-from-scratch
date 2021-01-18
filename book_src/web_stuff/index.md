@@ -1,12 +1,7 @@
 
 # Web Nonsense
 
-The internet is nonsense, and it's all a pile of crazy.
-In fact, all of computing is a mistake.
-Teaching rocks to think!?
-Of course it went badly.
-
-That said, people really like to run stuff in the browser.
+People really like to run stuff in the browser.
 It's very nice to end users if they can just open a web page and not have to install a whole thing.
 
 If you want to run Rust code in a browser you compile it to [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly),

@@ -1,0 +1,39 @@
+<html>
+<canvas width="800" height="600" id="my_canvas"></canvas>
+
+<body> Hello.
+  <script>
+    var gl;
+    var canvas;
+
+    function setup_canvas() {
+      console.log("Setting up the canvas...");
+      let canvas = document.getElementById("my_canvas");
+      gl = canvas.getContext("webgl");
+      if (!gl) {
+        console.log("Failed to get a WebGL context for the canvas!");
+        return;
+      }
+    }
+
+    function clear_to_blue() {
+      gl.clearColor(0.1, 0.1, 0.9, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    var importObject = {
+      env: {
+        setup_canvas: setup_canvas,
+        clear_to_blue: clear_to_blue,
+      }
+    };
+
+    const mod_path = 'target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm';
+    WebAssembly.instantiateStreaming(fetch(mod_path), importObject)
+      .then(results => {
+        results.instance.exports.start();
+      });
+  </script>
+</body>
+
+</html>

@@ -1,7 +1,14 @@
-#[cfg(test)]
-mod tests {
-  #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
+mod js {
+  extern "C" {
+    pub fn setup_canvas();
+    pub fn clear_to_blue();
+  }
+}
+
+#[no_mangle]
+pub extern "C" fn start() {
+  unsafe {
+    js::setup_canvas();
+    js::clear_to_blue();
   }
 }
