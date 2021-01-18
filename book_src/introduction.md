@@ -23,6 +23,11 @@ Expected subjects include:
 * Creating ergonomic wrapper functions to make the API easily used with the rest of Rust.
 * Having those wrapper functions be fully safe (in the Rust sense) when possible, or at least making them as error-proof as we can.
 
+I will be frequently linking to the documentation pages many of the the important things we deal with.
+I expect you to *actually go to those pages* and read what they say.
+I will be covering much, but I can't cover every single detail every single time.
+You should **always** read the documentation for yourself as well as reading this tutorial.
+
 **Reminder:** The "absolutely no dependencies" thing is for demonstration purposes only.
 If you actually want to draw a triangle within a reasonable amount of development time, please do feel free to use dependencies.
 Depending on what you need to do, there's generally many good crates available.
