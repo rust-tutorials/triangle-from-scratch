@@ -187,7 +187,7 @@ What we need to do is give the wasm code some functions to let it interact with 
     var gl;
     var canvas;
 
-    function setup_canvas() {
+    function setupCanvas() {
       console.log("Setting up the canvas...");
       let canvas = document.getElementById("my_canvas");
       gl = canvas.getContext("webgl");
@@ -197,15 +197,15 @@ What we need to do is give the wasm code some functions to let it interact with 
       }
     }
 
-    function clear_to_blue() {
+    function clearToBlue() {
       gl.clearColor(0.1, 0.1, 0.9, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
     var importObject = {
       env: {
-        setup_canvas: setup_canvas,
-        clear_to_blue: clear_to_blue,
+        setupCanvas: setupCanvas,
+        clearToBlue: clearToBlue,
       }
     };
 
@@ -226,21 +226,51 @@ Now we can call these from the Rust code:
 ```rust
 mod js {
   extern "C" {
-    pub fn setup_canvas();
-    pub fn clear_to_blue();
+    pub fn setupCanvas();
+    pub fn clearToBlue();
   }
 }
 
 #[no_mangle]
 pub extern "C" fn start() {
   unsafe {
-    js::setup_canvas();
-    js::clear_to_blue();
+    js::setupCanvas();
+    js::clearToBlue();
   }
 }
 ```
 
 And we'll see a blue canvas!
+
+Note that JavaScript convention doesn't use `snake_case` naming,
+they use `camelCase` naming.
+
+Also, when we want to rebuild our wasm module we have to use the whole
+`cargo build --release --target wasm32-unknown-unknown`
+each time.
+Horrible.
+Let's make a `.cargo/config.toml` file in our `web_stuff` crate folder.
+Then we can set the default build target to be for wasm:
+```toml
+[build]
+target = "wasm32-unknown-unknown"
+```
+Now `cargo build` and `cargo build --release` will pick the `wasm32-unknown-unknown` target by default.
+
+Also, it's a little annoying to have to manually rebuild our wasm when the HTML pages reloads automatically.
+To fix this, we can get `cargo-watch`
+
+> cargo install cargo-watch
+
+And then run a cargo-watch instance to automatically rebuild the code as necessary:
+```
+cargo watch -c -x "build --release"
+```
+The `-c` clears the terminal each time the watch restarts so that you never look at old output by accident.
+
+The `-x "build --release"` executes "cargo build --release" each time `cargo-watch` detects a change.
+
+Now we will always have both the latest HTML *and* wasm in our browser page.
 
 ## Drawing A Triangle
 
