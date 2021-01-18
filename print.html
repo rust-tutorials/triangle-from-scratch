@@ -3322,7 +3322,9 @@ pub struct PIXELFORMATDESCRIPTOR {
 <span class="boring">}
 </span></code></pre></pre>
 <p>However, since we want the type to <em>always</em> say it's size and version,
-we'll have a <code>Default</code> impl that just sets the size and version for us.</p>
+we won't use our <code>unsafe_impl_default_zeroed!</code> that we had before.
+Instead, we'll have a <code>Default</code> impl that is <em>mostly</em> zeroed memory,
+and then also sets the size and version for us.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
