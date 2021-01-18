@@ -8,6 +8,11 @@ There's also some C++ oriented APIs for interacting with Windows as well (called
 It's *much* easier for Rust to bind to and interact with a C oriented API than a C++ oriented API,
 so we'll start with just using Win32 to interact with Windows.
 
+**Note:** I will be linking to the MSDN pages for nearly all the important things we deal with.
+I expect you to *actually go to those pages* and read what they say.
+I will be covering much of what they deal with, but I can't cover every single detail.
+You should **always** read the documentation for yourself as well as reading this tutorial.
+
 ## Search The Web
 
 Okay, for the sake of the lesson let's pretend that *even I* don't know what to do.
