@@ -192,7 +192,7 @@ we need to set <code>CS_OWNDC</code> in the <code>style</code> field so that eac
 <p>If we search for <code>CS_OWNDC</code> <a href="https://docs.microsoft.com/en-us/search/?scope=Desktop&amp;terms=CS_OWNDC">in the MSDN pages</a>,
 it leads us to the <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/window-class-styles">Window Class Styles</a> page.
 Ah, so many things to look at.
-We know we want <code>CS_OWNDC</code>,
+We know we want <code>CS_OWNDC</code> (Class Style: Own Device Context),
 but if we glance at the other options there's mostly stuff we don't need.
 Interestingly, it looks like maybe you need to enable double-click support on your window if you want it?
 We don't need that now, but just something to remember if you want it later on.
