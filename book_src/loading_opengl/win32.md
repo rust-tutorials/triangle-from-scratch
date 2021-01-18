@@ -192,7 +192,9 @@ pub struct PIXELFORMATDESCRIPTOR {
 ```
 
 However, since we want the type to *always* say it's size and version,
-we'll have a `Default` impl that just sets the size and version for us.
+we won't use our `unsafe_impl_default_zeroed!` that we had before.
+Instead, we'll have a `Default` impl that is *mostly* zeroed memory,
+and then also sets the size and version for us.
 ```rust
 impl Default for PIXELFORMATDESCRIPTOR {
   #[inline]
