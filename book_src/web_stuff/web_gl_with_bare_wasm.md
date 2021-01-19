@@ -305,15 +305,15 @@ Now we will always have both the latest HTML *and* wasm in our browser page.
 
 ## Drawing A Triangle
 
-We need a little more wasm/js interaction than what we have to make a complete triangle.
-Let's check out the additional stuff we'll need for a proper triangle draw.
+We need a little more wasm/js interaction than what we have right now to actually draw a triangle.
 
 If you want a larger WebGL tutorial you should check out [the one on MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial).
-We won't go into all of it, but there's some good stuff there.
-
 WebGL is based on OpenGL ES 2.0,
 which is based on OpenGL 2.0,
 so if you already know about GL stuff, this will probably look very familiar.
+
+For now, we'll mostly skip over the WebGL explanations themselves.
+Instead we'll focus on the interoperation guts that let our wasm interact with WebGL.
 
 ### The Rust Code
 
