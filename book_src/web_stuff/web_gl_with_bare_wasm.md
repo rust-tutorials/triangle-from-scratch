@@ -115,9 +115,10 @@ but I know just enough to throw some HTML together by hand:
 
 ```html
 <html>
-<canvas width="800" height="600" id="my_canvas"></canvas>
 
-<body> Hello. </body>
+<body>
+  <canvas width="800" height="600" id="my_canvas"></canvas>
+</body>
 
 </html>
 ```
@@ -149,9 +150,9 @@ which makes a file: `target/wasm32-unknown-unknown/release/triangle_from_scratch
 Now we have to alter our page to load the wasm via a script:
 ```html
 <html>
-<canvas width="800" height="600" id="my_canvas"></canvas>
 
-<body> Hello.
+<body>
+  <canvas width="800" height="600" id="my_canvas"></canvas>
   <script>
     var importObject = {};
 
@@ -520,9 +521,9 @@ Since we need to transfer strings between wasm and javascript,
 we'll need a [TextDecoder](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder).
 ```html
 <html>
-<canvas width="800" height="600" id="my_canvas"></canvas>
 
 <body>
+  <canvas width="800" height="600" id="my_canvas"></canvas>
   <script>
     var gl;
     var canvas;
