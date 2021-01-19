@@ -1,7 +1,7 @@
 
 # Web GL with bare Wasm
 
-Before we begin I should give a big thanks to [kettle11](https://github.com/kettle11),
+I should give a big thanks to [kettle11](https://github.com/kettle11),
 who made the [hello_triangle_wasm_rust](https://github.com/kettle11/hello_triangle_wasm_rust) example for me.
 
 Also, I should probably have an extra reminder at the top of this lesson:
