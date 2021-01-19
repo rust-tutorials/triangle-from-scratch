@@ -1,0 +1,849 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>WebGL with bare WASM - Triangle From Scratch</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="../favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="../favicon.png">
+        
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../web_stuff/index.html"><strong aria-hidden="true">3.</strong> Web Stuff</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../web_stuff/web_gl_with_bare_wasm.html" class="active"><strong aria-hidden="true">3.1.</strong> WebGL with bare WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">4.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">4.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Triangle From Scratch</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#web-gl-with-bare-wasm" id="web-gl-with-bare-wasm">Web GL with bare Wasm</a></h1>
+<p>I should give a big thanks to <a href="https://github.com/kettle11">kettle11</a>,
+who made the <a href="https://github.com/kettle11/hello_triangle_wasm_rust">hello_triangle_wasm_rust</a> example for me.</p>
+<p>Also, I should probably have an extra reminder at the top of this lesson:
+This is the &quot;doing it all yourself&quot; style.
+Much of the &quot;Rust for Wasm&quot; ecosystem uses a crate called <a href="https://rustwasm.github.io/docs/wasm-bindgen/introduction.html">wasm-bindgen</a>.
+In the same way that, if you &quot;just want to open a window&quot; you would often reach for <code>winit</code> or <code>sdl2</code> or something,
+if you &quot;just want to show something in the browser&quot; you'll often use <code>wasm-bindgen</code> (and the crates that go with it).
+People will at least <em>expect</em> that you're using <code>wasm-bindgen</code> if you get lost and need to ask someone for help.
+They've got a book of their own, with many many examples, so have a look there if that's what you wanna do.</p>
+<h2><a class="header" href="#toolchain-setup" id="toolchain-setup">Toolchain Setup</a></h2>
+<p>Before we even begin, we'll need to take a few extra steps to have the right compiler and tools available.</p>
+<p>In addition to having Rust installed, we need to install the <code>wasm32-unknown-unknown</code> target:</p>
+<blockquote>
+<p>rustup target add wasm32-unknown-unknown</p>
+</blockquote>
+<p>In addition, you may wish to obtain the <code>wasm-opt</code> tool from their <a href="https://github.com/WebAssembly/binaryen">GitHub repo</a>,
+though it's not required.</p>
+<p>You also might wish to obtain the <code>wasm-strip</code> tool from <a href="https://github.com/WebAssembly/wabt">The WebAssembly Binary Toolkit</a> (WABT).
+It lets you strip debugging symbols and such from the program, reducing the size by quite a bit.
+You can also do this without an extra tool via a Nightly <code>rustc</code> flag.</p>
+<p>Once you've compiled your program to wasm you'll also need some way to display it.</p>
+<p><strong>Unfortunately, you can't simply open a local file in your browser using a <code>file://</code> address.</strong></p>
+<p>This is fine for a plain HTML file,
+but browsers (rightly) get more paranoid every day,
+so they don't support wasm execution in pages loaded through a file address.
+If you don't already have such a thing (I didn't), then you can try <a href="https://crates.io/crates/devserver">devserver</a>.</p>
+<blockquote>
+<p>cargo install devserver</p>
+</blockquote>
+<p>If you already have your own favorite way to spin up a local server that can serve static files, that's fine too.</p>
+<h2><a class="header" href="#separate-folder" id="separate-folder">Separate Folder</a></h2>
+<p>This will have a new non-standard requirements,
+so I'm going to put it in a <code>web_crate/</code> directory.</p>
+<p>First it needs its own <code>Cargo.toml</code> file:</p>
+<pre><code class="language-toml">[package]
+name = &quot;triangle-from-scratch-web-crate&quot;
+version = &quot;0.1.0&quot;
+authors = [&quot;Lokathor &lt;zefria@gmail.com&gt;&quot;]
+edition = &quot;2018&quot;
+license = &quot;Zlib OR Apache-2.0 OR MIT&quot;
+</code></pre>
+<p>Now also, to make a wasm library like we need we have to tell Rust that the <a href="https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field">crate-type</a>
+will be <code>cdylib</code>:</p>
+<pre><code class="language-toml">[lib]
+crate-type = [&quot;cdylib&quot;]
+</code></pre>
+<p>Personally I also like to turn on <a href="https://doc.rust-lang.org/cargo/reference/profiles.html#lto">link-time optimization</a> with release builds,
+not because it's required,
+but just because I'm willing to spend some extra compile time to get a performance edge.
+The winner here is &quot;thin&quot;,
+which provides almost all the benefit for a minimal amount of additional time and memory taken to compile.</p>
+<pre><code class="language-toml">[profile.release]
+lto = &quot;thin&quot;
+</code></pre>
+<p>Now we're set.</p>
+<h2><a class="header" href="#the-wasm-library" id="the-wasm-library">The Wasm Library</a></h2>
+<p>As you can sorta already see, our &quot;program&quot; isn't actually going to be built as an executable.
+Instead, it's going to be built as a C-compatible library that the JavaScript of the webpage will load and use.
+This means that instead of writing a <code>main.rs</code> with an optional <code>lib.rs</code>,
+we put 100% of the code into <code>lib.rs</code> right from the start.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// lib.rs
+
+#[no_mangle]
+pub extern &quot;C&quot; fn start() {
+  // nothing yet!
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Note the use of the <a href="https://doc.rust-lang.org/reference/abi.html#the-no_mangle-attribute">no_mangle</a> attribute.
+This totally disables the usual name mangling that Rust does.
+It allows for the function to be called by external code that doesn't know Rust's special naming scheme, which is good,
+but there can only be a single function with a given name anywhere.
+In other words, if some other function named <code>start</code> with no mangling existed <em>anywhere</em> in our project,
+or in any of our dependencies, then we'd get a compilation error.
+That's why name mangling is on by default.</p>
+<p>Also note that we have to declare that our <code>start</code> function uses the <code>extern &quot;C&quot;</code> ABI,
+this will give us the correct calling convention when communicating between JavaScript and Wasm.</p>
+<p>When JavaScript loads up our wasm module, the <code>start</code> function will be called.
+This will allow our program to do whatever it wants to do,
+similar to the <code>main</code> function in a normal program.</p>
+<h2><a class="header" href="#the-web-page" id="the-web-page">The Web Page</a></h2>
+<p>Okay now we need a webpage for the user to display and have the wasm go.</p>
+<p>I'm absolutely not a web development person,
+but I know just enough to throw some HTML together by hand:</p>
+<pre><code class="language-html">&lt;html&gt;
+
+&lt;body&gt;
+  &lt;canvas width=&quot;800&quot; height=&quot;600&quot; id=&quot;my_canvas&quot;&gt;&lt;/canvas&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+<p>Next we start the local server and go to the page.</p>
+<pre><code>D:\dev\triangle-from-scratch&gt;cd web_crate
+
+D:\dev\triangle-from-scratch\web_crate&gt;devserver
+
+Serving [D:\dev\triangle-from-scratch\web_crate\] at [ https://localhost:8080 ] or [ http://localhost:8080 ]
+Automatic reloading is enabled!
+Stop with Ctrl+C
+</code></pre>
+<p>And it says &quot;Hello.&quot; in the middle of the page.
+We'll just leave that open in one console and it'll automatically reload files as necessary.</p>
+<p>Now we build our wasm module (note the <code>--target</code> argument):</p>
+<pre><code>D:\dev\triangle-from-scratch\web_crate&gt;cargo build --release --target wasm32-unknown-unknown
+   Compiling triangle-from-scratch-web-crate v0.1.0 (D:\dev\triangle-from-scratch\web_crate)
+    Finished release [optimized] target(s) in 1.16s
+</code></pre>
+<p>which makes a file: <code>target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm</code></p>
+<p>(If we hadn't used the <code>--release</code> flag, then it'd be in <code>target/wasm32-unknown-unknown/debug/</code> instead.)</p>
+<p>Now we have to alter our page to load the wasm via a script:</p>
+<pre><code class="language-html">&lt;html&gt;
+
+&lt;body&gt;
+  &lt;canvas width=&quot;800&quot; height=&quot;600&quot; id=&quot;my_canvas&quot;&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    var importObject = {};
+
+    const mod_path = 'target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm';
+    WebAssembly.instantiateStreaming(fetch(mod_path), importObject)
+      .then(results =&gt; {
+        results.instance.exports.start();
+      });
+  &lt;/script&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+<p>What's going on here?
+Well, you should sure read the <a href="https://developer.mozilla.org/en-US/docs/WebAssembly/Loading_and_running">Loading and running WebAssembly code</a>
+tutorial on the Mozilla Developer Network (MDN) page.</p>
+<ul>
+<li>First we call <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming">WebAssembly.instantiateStreaming()</a>
+<ul>
+<li>The first argument is whatever will give us the wasm stream.
+In this case, a call to <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API">fetch</a>.</li>
+<li>The second argument is the &quot;import object&quot;, which lets us provide things to the wasm code.
+At the moment we don't provide anything to the wasm, so we use an empty object.</li>
+</ul>
+</li>
+<li>This gives a <code>Promise&lt;ResultObject&gt;</code>, so we use the <code>then</code> method to do something to the results.
+It's similar to Rust's async/await and Future stuff.
+Except it's not quite the same, they tell me.
+I don't really know JavaScript, but I'm kinda just nodding and smiling as we go.</li>
+<li>When acting on the results,
+<code>results.module</code> is the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module">web assembly module</a>
+and <code>results.instance</code> is the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance">web assembly instance</a>.
+The module isn't too helpful to us right now,
+but by using the instance we can call our <code>start</code> function (or any other non-mangled public function).</li>
+</ul>
+<h2><a class="header" href="#make-the-wasm-do-something" id="make-the-wasm-do-something">Make The Wasm Do Something</a></h2>
+<p>It's not too exciting for nothing to happen.
+Let's have the wasm clear the canvas to a non-white color.</p>
+<p>First we expand the script on the web page.
+What we need to do is give the wasm code some functions to let it interact with the outside world.</p>
+<pre><code class="language-html">  &lt;script&gt;
+    var gl;
+    var canvas;
+
+    function setupCanvas() {
+      console.log(&quot;Setting up the canvas...&quot;);
+      let canvas = document.getElementById(&quot;my_canvas&quot;);
+      gl = canvas.getContext(&quot;webgl&quot;);
+      if (!gl) {
+        console.log(&quot;Failed to get a WebGL context for the canvas!&quot;);
+        return;
+      }
+    }
+
+    function clearToBlue() {
+      gl.clearColor(0.1, 0.1, 0.9, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    var importObject = {
+      env: {
+        setupCanvas: setupCanvas,
+        clearToBlue: clearToBlue,
+      }
+    };
+
+    const mod_path = 'target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm';
+    WebAssembly.instantiateStreaming(fetch(mod_path), importObject)
+      .then(results =&gt; {
+        results.instance.exports.start();
+      });
+  &lt;/script&gt;
+</code></pre>
+<p>Now our <code>importObject</code> has an <code>env</code> field.
+Each function declared in here will be accessible to the wasm as an external function.
+One of them sets up the canvas and WebGL context.
+The other clears the canvas to a nice blue color.</p>
+<p>Now we can call these from the Rust code:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod js {
+  extern &quot;C&quot; {
+    pub fn setupCanvas();
+    pub fn clearToBlue();
+  }
+}
+
+#[no_mangle]
+pub extern &quot;C&quot; fn start() {
+  unsafe {
+    js::setupCanvas();
+    js::clearToBlue();
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>And we'll see a blue canvas!</p>
+<p>Note that JavaScript convention doesn't use <code>snake_case</code> naming,
+they use <code>camelCase</code> naming.
+The naming style isn't significant to the compiler, it's just a convention.</p>
+<h2><a class="header" href="#workflow-tweaks" id="workflow-tweaks">Workflow Tweaks</a></h2>
+<p>When we want to rebuild our wasm module we have to use the whole
+<code>cargo build --release --target wasm32-unknown-unknown</code>
+each time.
+Horrible.
+Let's make a <a href="https://doc.rust-lang.org/cargo/reference/config.html">.cargo/config.toml</a>
+file in our <code>web_stuff</code> crate folder.
+Then we can set the default build target to be for wasm:</p>
+<pre><code class="language-toml">[build]
+target = &quot;wasm32-unknown-unknown&quot;
+</code></pre>
+<p>Now <code>cargo build</code> and <code>cargo build --release</code> will pick the <code>wasm32-unknown-unknown</code> target by default.</p>
+<p>Also, here is where we can easily pass the flag for <code>rustc</code> to strip the symbols from the output:</p>
+<pre><code class="language-toml">[build]
+target = &quot;wasm32-unknown-unknown&quot;
+rustflags = [&quot;-Zstrip=symbols&quot;]
+</code></pre>
+<p>The <code>-Z</code> part means that it's an unstable flag, so we can only do it with Nightly.
+If you want to strip the symbols but stick to Stable Rust you'll have to get the
+<code>wasm-strip</code> tool from the <a href="https://github.com/WebAssembly/wabt">wabt</a>
+toolkit that I mentioned before.
+Stripping the symbols just makes the output smaller, so there's less to send over the network.
+In a small example like ours, it changes the final output size from 308 bytes to 161 bytes.
+Our code isn't doing too much, in terms of instructions,
+so just putting in the debug symbols is a hefty percentage of the overall bytes taken.
+We'll have another look when our program is doing a bit more to see if it's still a big difference.</p>
+<p>Also, it's a little annoying to have to manually rebuild our wasm when the HTML pages reloads automatically.
+To fix this, we can get <code>cargo-watch</code></p>
+<blockquote>
+<p>cargo install cargo-watch</p>
+</blockquote>
+<p>And then run a cargo-watch instance to automatically rebuild the code as necessary:</p>
+<pre><code>cargo watch -c -x &quot;build --release&quot;
+</code></pre>
+<p>The <code>-c</code> clears the terminal each time the watch restarts so that you never look at old output by accident.</p>
+<p>The <code>-x &quot;build --release&quot;</code> executes &quot;cargo build --release&quot; each time <code>cargo-watch</code> detects a change.</p>
+<p>Now we will always have both the latest HTML <em>and</em> wasm in our browser page.</p>
+<h2><a class="header" href="#drawing-a-triangle" id="drawing-a-triangle">Drawing A Triangle</a></h2>
+<p>We need a little more wasm/js interaction than what we have to make a complete triangle.
+Let's check out the additional stuff we'll need for a proper triangle draw.</p>
+<p>If you want a larger WebGL tutorial you should check out <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial">the one on MDN</a>.
+We won't go into all of it, but there's some good stuff there.</p>
+<p>WebGL is based on OpenGL ES 2.0,
+which is based on OpenGL 2.0,
+so if you already know about GL stuff, this will probably look very familiar.</p>
+<h3><a class="header" href="#the-rust-code" id="the-rust-code">The Rust Code</a></h3>
+<p>What we want is for our rust code to look something like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[no_mangle]
+pub extern &quot;C&quot; fn start() {
+  unsafe {
+    js::setupCanvas();
+
+    let vertex_data = [-0.2_f32, 0.5, 0.0, -0.5, -0.4, 0.0, 0.5, -0.1, 0.0];
+    let vertex_buffer = js::createBuffer();
+    js::bindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    js::bufferDataF32(
+      GL_ARRAY_BUFFER,
+      vertex_data.as_ptr(),
+      vertex_data.len(),
+      GL_STATIC_DRAW,
+    );
+
+    let index_data = [0_u16, 1, 2];
+    let index_buffer = js::createBuffer();
+    js::bindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+    js::bufferDataU16(
+      GL_ELEMENT_ARRAY_BUFFER,
+      index_data.as_ptr(),
+      index_data.len(),
+      GL_STATIC_DRAW,
+    );
+
+    let vertex_shader_text = &quot;
+      attribute vec3 vertex_position;
+      void main(void) {
+        gl_Position = vec4(vertex_position, 1.0);
+      }&quot;;
+    let vertex_shader = js::createShader(GL_VERTEX_SHADER);
+    js::shaderSource(
+      vertex_shader,
+      vertex_shader_text.as_bytes().as_ptr(),
+      vertex_shader_text.len(),
+    );
+    js::compileShader(vertex_shader);
+
+    let fragment_shader_text = &quot;
+      void main() {
+        gl_FragColor = vec4(1.0, 0.5, 0.313, 1.0);
+      }&quot;;
+    let fragment_shader = js::createShader(GL_FRAGMENT_SHADER);
+    js::shaderSource(
+      fragment_shader,
+      fragment_shader_text.as_bytes().as_ptr(),
+      fragment_shader_text.len(),
+    );
+    js::compileShader(fragment_shader);
+
+    let shader_program = js::createProgram();
+    js::attachShader(shader_program, vertex_shader);
+    js::attachShader(shader_program, fragment_shader);
+    js::linkProgram(shader_program);
+    js::useProgram(shader_program);
+
+    let name = &quot;vertex_position&quot;;
+    let attrib_location = js::getAttribLocation(
+      shader_program,
+      name.as_bytes().as_ptr(),
+      name.len(),
+    );
+    assert!(attrib_location != GLuint::MAX);
+    js::enableVertexAttribArray(attrib_location);
+    js::vertexAttribPointer(attrib_location, 3, GL_FLOAT, false, 0, 0);
+
+    js::clearColor(0.37, 0.31, 0.86, 1.0);
+    js::clear(GL_COLOR_BUFFER_BIT);
+    js::drawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>I don't want to cover too many details of how WebGL works right now because we're mostly focusing on the Wasm stuff,
+but here are the broad steps:</p>
+<ul>
+<li>Initialize the canvas</li>
+<li>Bind a buffer as the ARRAY_BUFFER and then place our vertex data into it.</li>
+<li>Bind a buffer as the ELEMENT_ARRAY_BUFFER and then give it our index data.</li>
+<li>Create a vertex shader</li>
+<li>Create a fragment shader</li>
+<li>Create a program, connect the two shaders, then link, then use.</li>
+<li>Get the location of the vertex_position attribute,
+enable that location,
+and then point the location at the correct position within our vertex array.</li>
+<li>Clear the screen to our background color.</li>
+<li>Draw the triangle.</li>
+</ul>
+<p>If you're used to OpenGL,
+or even to graphics programming using some other API,
+this should all feel quite familiar.</p>
+<p>To support our <code>start</code> function we need to have quite a few more <code>extern</code> declarations,
+and also <code>const</code> declarations:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub type GLenum = u32;
+pub type GLbitmask = u32;
+pub type GLuint = u32;
+pub type GLint = i32;
+pub type GLsizei = i32;
+// Note(kettle11): GLintptr should be an i64, but those can't be properly passed
+// between Wasm and Javascript, so for now just use an i32.
+pub type GLintptr = i32;
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct JSObject(u32);
+impl JSObject {
+  pub const fn null() -&gt; Self {
+    JSObject(0)
+  }
+}
+
+use constants::*;
+mod constants {
+  //! Values taken from the [WebGL Constants page](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants).
+  //!
+  //! All names here have the `GL_` prefix added.
+
+  use super::{GLbitmask, GLenum};
+
+  pub const GL_ARRAY_BUFFER: GLenum = 0x8892;
+  pub const GL_ELEMENT_ARRAY_BUFFER: GLenum = 0x8893;
+  pub const GL_FLOAT: GLenum = 0x1406;
+  pub const GL_FRAGMENT_SHADER: GLenum = 0x8B30;
+  pub const GL_STATIC_DRAW: GLenum = 0x88E4;
+  pub const GL_TRIANGLES: GLenum = 0x0004;
+  pub const GL_UNSIGNED_SHORT: GLenum = 0x1403;
+  pub const GL_VERTEX_SHADER: GLenum = 0x8B31;
+
+  pub const GL_COLOR_BUFFER_BIT: GLbitmask = 0x00004000;
+}
+
+mod js {
+  //! Holds our `extern &quot;C&quot;` declarations for javascript interactions.
+
+  use super::*;
+
+  extern &quot;C&quot; {
+    pub fn setupCanvas();
+
+    //
+
+    pub fn attachShader(program: JSObject, shader: JSObject);
+    pub fn bindBuffer(target: GLenum, id: JSObject);
+    pub fn bufferDataF32(
+      target: GLenum, data_ptr: *const f32, data_length: usize, usage: GLenum,
+    );
+    pub fn bufferDataU16(
+      target: GLenum, data_ptr: *const u16, data_length: usize, usage: GLenum,
+    );
+    pub fn clear(mask: GLbitmask);
+    pub fn clearColor(r: f32, g: f32, b: f32, a: f32);
+    pub fn compileShader(program: JSObject);
+    pub fn createBuffer() -&gt; JSObject;
+    pub fn createProgram() -&gt; JSObject;
+    pub fn createShader(shader_type: GLenum) -&gt; JSObject;
+    pub fn drawElements(
+      mode: GLenum, count: GLsizei, type_: GLenum, offset: GLintptr,
+    );
+    pub fn enableVertexAttribArray(index: GLuint);
+    pub fn getAttribLocation(
+      program: JSObject, name: *const u8, name_length: usize,
+    ) -&gt; GLuint;
+    pub fn linkProgram(program: JSObject);
+    pub fn shaderSource(
+      shader: JSObject, source: *const u8, source_length: usize,
+    );
+    pub fn useProgram(program: JSObject);
+    pub fn vertexAttribPointer(
+      index: GLuint, size: GLint, type_: GLenum, normalized: bool,
+      stride: GLsizei, pointer: GLintptr,
+    );
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>This is pretty normal stuff, except the <code>JsObject</code> thing.
+What's going on there?</p>
+<p>Well, we can't pass a whole javascript object over the C FFI.
+What even is a javascript object, anyway?
+I dunno, some sort of hash... thing... with fields.
+It doesn't matter.
+The point is that it's a type that you <em>can't</em> pass over the C FFI.
+That's mostly fine, except that we need to communicate with GL about them.</p>
+<p>What we'll do is store all our javascript objects in a list out in javascript-land,
+and then in the WASM we just use the <em>index values</em> into that list to name the javascript objects when we need to.</p>
+<h3><a class="header" href="#the-javascript-code" id="the-javascript-code">The JavaScript Code</a></h3>
+<p>On the javascript side of things, we mostly add a bunch of boring functions,
+but a few are interesting.</p>
+<p>First we set up a few more variables we'll use.
+We have the <code>gl</code> and <code>canvas</code> from before,
+but now we'll need to make the javascript and wasm memory interact,
+and we'll also need to track javascript objects that the wasm knows about.
+Since we need to transfer strings between wasm and javascript,
+we'll need a <a href="https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder">TextDecoder</a>.</p>
+<pre><code class="language-html">&lt;html&gt;
+
+&lt;body&gt;
+  &lt;canvas width=&quot;800&quot; height=&quot;600&quot; id=&quot;my_canvas&quot;&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    var gl;
+    var canvas;
+    var wasm_memory;
+    var js_objects = [null];
+
+    const decoder = new TextDecoder();
+</code></pre>
+<p>The canvas setup is basically the same as before,</p>
+<pre><code class="language-js">    function setupCanvas() {
+      console.log(&quot;Setting up the canvas.&quot;);
+      let canvas = document.getElementById(&quot;my_canvas&quot;);
+      gl = canvas.getContext(&quot;webgl&quot;);
+      if (!gl) {
+        console.log(&quot;Failed to get a WebGL context for the canvas!&quot;);
+        return;
+      }
+    }
+</code></pre>
+<p>But making our <code>importObject</code> is quite a few functions this time:</p>
+<pre><code class="language-js">    var importObject = {
+      env: {
+        setupCanvas: setupCanvas,
+
+        attachShader: function (program, shader) {
+          gl.attachShader(js_objects[program], js_objects[shader]);
+        },
+        bindBuffer: function (target, id) {
+          gl.bindBuffer(target, js_objects[id]);
+        },
+        bufferDataF32: function (target, data_ptr, data_length, usage) {
+          const data = new Float32Array(wasm_memory.buffer, data_ptr, data_length);
+          gl.bufferData(target, data, usage);
+        },
+        bufferDataU16: function (target, data_ptr, data_length, usage) {
+          const data = new Uint16Array(wasm_memory.buffer, data_ptr, data_length);
+          gl.bufferData(target, data, usage);
+        },
+        clear: function (mask) {
+          gl.clear(mask)
+        },
+        clearColor: function (r, g, b, a) {
+          gl.clearColor(r, g, b, a);
+        },
+        compileShader: function (shader) {
+          gl.compileShader(js_objects[shader]);
+        },
+        createBuffer: function () {
+          return js_objects.push(gl.createBuffer()) - 1;
+        },
+        createProgram: function () {
+          return js_objects.push(gl.createProgram()) - 1;
+        },
+        createShader: function (shader_type) {
+          return js_objects.push(gl.createShader(shader_type)) - 1;
+        },
+        drawElements: function (mode, count, type, offset) {
+          gl.drawElements(mode, count, type, offset);
+        },
+        enableVertexAttribArray: function (index) {
+          gl.enableVertexAttribArray(index)
+        },
+        getAttribLocation: function (program, pointer, length) {
+          const string_data = new Uint8Array(wasm_memory.buffer, pointer, length);
+          const string = decoder.decode(string_data);
+          return gl.getAttribLocation(js_objects[program], string);
+        },
+        linkProgram: function (program) {
+          gl.linkProgram(js_objects[program]);
+        },
+        shaderSource: function (shader, pointer, length) {
+          const string_data = new Uint8Array(wasm_memory.buffer, pointer, length);
+          const string = decoder.decode(string_data);
+          gl.shaderSource(js_objects[shader], string);
+        },
+        useProgram: function (program) {
+          gl.useProgram(js_objects[program]);
+        },
+        vertexAttribPointer: function (index, size, type, normalized, stride, offset) {
+          gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
+        },
+      }
+    };
+</code></pre>
+<h4><a class="header" href="#slices" id="slices">Slices</a></h4>
+<p>Of note is this function:</p>
+<pre><code class="language-js">bufferDataF32: function (target, data_ptr, data_length, usage) {
+  const data = new Float32Array(wasm_memory.buffer, data_ptr, data_length);
+  gl.bufferData(target, data, usage);
+},
+</code></pre>
+<p>To access a memory slice living in the wasm memory,
+first the wasm code passes a pointer and length out to javascript.
+Then the javascript uses that to make an array object.
+In this case, a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array">Float32Array</a>.
+We have a similar function for <code>u16</code> as well.</p>
+<p>Strings take an extra step:
+once you've made a <code>Uint8Array</code> we have to use our decoder to convert that into javascript's natural string type.</p>
+<h4><a class="header" href="#objects" id="objects">Objects</a></h4>
+<p>When we need to get an object from WebGL and pass it along to wasm,
+we just push it into our list and tell wasm the index of the object.
+The <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push">push</a>
+method on arrays returns the new length, so we just subtract 1 and that'll be the index of the newly added object.</p>
+<pre><code class="language-js">createBuffer: function () {
+  return js_objects.push(gl.createBuffer()) - 1;
+},
+</code></pre>
+<p>This is <em>not</em> the most extensible system.
+We can't ever delete and objects with this basic setup.
+If we remove an element from our list, all the slots after would have the wrong index.</p>
+<p>To allow for deletion, we'd need to change deleted elements to <code>null</code>,
+and then when a new object is requested we'd scan the list looking for the first <code>null</code> (other than at index 0),
+and put the object at that position.
+If we don't find any open spots in the list, <em>only then</em> do we push it onto the end of the list.</p>
+<p>Alternately, we could store all of our objects in a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map">Map</a>.
+This would let us simply assign an object to a key,
+and when we're done with it we'd delete the key.</p>
+<p>I'm not a javascript expert, in fact I'm barely a javascript beginner,
+so I don't know which of those would be better in the long term.</p>
+<p>Any time we need to let the wasm &quot;use&quot; an object,
+it passes the index of the object and we look it up from our list:</p>
+<pre><code class="language-js">attachShader: function (program, shader) {
+  gl.attachShader(js_objects[program], js_objects[shader]);
+},
+</code></pre>
+<h4><a class="header" href="#wasm-startup" id="wasm-startup">Wasm Startup</a></h4>
+<p>Finally, we need to change one more thing about the startup code.</p>
+<p>After we get the <code>results</code> back,
+we have to assign the exported memory to our <code>wasm_memory</code> value.
+This lets all the other functions manipulate is when they need to.</p>
+<pre><code class="language-js">const mod_path = 'target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm';
+WebAssembly.instantiateStreaming(fetch(mod_path), importObject)
+  .then(results =&gt; {
+    console.log(&quot;Wasm instance created.&quot;);
+    // assign the memory to be usable by the other functions
+    wasm_memory = results.instance.exports.memory;
+    // start the wasm
+    results.instance.exports.start();
+  });
+</code></pre>
+<h2><a class="header" href="#and-now-theres-a-triangle" id="and-now-theres-a-triangle">And Now There's A Triangle!</a></h2>
+<p>We've finally got our triangle on the page!</p>
+<p>A static image isn't the best,
+so in the next lesson we'll cover how to get some user interaction.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="../web_stuff/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="../appendix/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../web_stuff/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="../appendix/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

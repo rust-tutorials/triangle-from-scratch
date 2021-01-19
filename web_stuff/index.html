@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Loading OpenGL - Triangle From Scratch</title>
+        <title>Web Stuff - Triangle From Scratch</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html" class="active"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../web_stuff/index.html"><strong aria-hidden="true">3.</strong> Web Stuff</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../web_stuff/web_gl_with_bare_wasm.html"><strong aria-hidden="true">3.1.</strong> WebGL with bare WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">4.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">4.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="../opening_a_window/index.html"><strong aria-hidden="true">1.</strong> Opening A Window</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../opening_a_window/win32.html"><strong aria-hidden="true">1.1.</strong> Win32</a></li><li class="chapter-item expanded "><a href="../opening_a_window/win32_cleanup.html"><strong aria-hidden="true">1.2.</strong> Win32 Cleanup</a></li></ol></li><li class="chapter-item expanded "><a href="../loading_opengl/index.html"><strong aria-hidden="true">2.</strong> Loading OpenGL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../loading_opengl/win32.html"><strong aria-hidden="true">2.1.</strong> Win32</a></li></ol></li><li class="chapter-item expanded "><a href="../web_stuff/index.html" class="active"><strong aria-hidden="true">3.</strong> Web Stuff</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../web_stuff/web_gl_with_bare_wasm.html"><strong aria-hidden="true">3.1.</strong> WebGL with bare WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../appendix/index.html"><strong aria-hidden="true">4.</strong> Appendix</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../appendix/utf16_literals.html"><strong aria-hidden="true">4.1.</strong> UTF-16 Literals</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,48 +163,35 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#loading-open-gl" id="loading-open-gl">Loading Open GL</a></h1>
-<p>While the <em>usage</em> of Open GL is basically the same across platforms,
-the precise details of how to first initialize Open GL varies.</p>
-<p>The general idea is that we need to do two things:</p>
-<ol>
-<li>Create an <a href="https://www.khronos.org/opengl/wiki/OpenGL_Context">Open GL context</a>
-and make it &quot;current&quot;.
-A GL context is what holds all of the drawing state for GL.
-Each GL Context must only be current in a single thread at a time,
-otherwise you'll get undefined behavior.
-Also, a thread's current context is a thread-local variable,
-so you can't have more than one context current in a thread at a time.
-Also, a context is associated with a particular window's drawing area.
-Usually you have just one window,
-and so you have only one GL context,
-meaning that don't need to worry about any of that.
-If you're trying to use GL with more than one window at a time,
-things can get tricky.</li>
-<li>Load the GL function pointers.
-Unfortunately, you can't access GL like it was a normal dynamic library.
-At least, you can't on Windows and Linux.
-We'll have a whole fun time
-<a href="https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions">loading function pointers</a> manually.</li>
-</ol>
-<h2><a class="header" href="#acknowledgements" id="acknowledgements">Acknowledgements</a></h2>
-<p>For this portion of the guide I'd like to give an incredible acknowledgement to
-<a href="https://github.com/glowcoil">glowcoil</a>, who wrote the
-<a href="https://github.com/glowcoil/raw-gl-context">raw-gl-context</a>
-crate, which gives come very clean and clear examples of how you open a GL context on the major platforms.</p>
+                        <h1><a class="header" href="#web-nonsense" id="web-nonsense">Web Nonsense</a></h1>
+<p>People really like to run stuff in the browser.
+It's very nice to end users if they can just open a web page and not have to install a whole thing.</p>
+<p>If you want to run Rust code in a browser you compile it to <a href="https://en.wikipedia.org/wiki/WebAssembly">WebAssembly</a>,
+or WASM for short,
+which is an output target the same as compiling for windows x86_64,
+or linux arm,
+or any other target.</p>
+<p>Even then, Wasm is strongly sandboxed, and it cannot directly interact with the world.
+Not only do you have to bind to some external functions on the Rust side,
+you have to <em>write those external functions yourself</em> in javascript.
+This is a bit of a bother,
+and so,
+<em>for this one target platform</em>,
+we'll first see how to do it ourselves,
+and then we'll see how to leverage the most common crate for targeting wasm.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../opening_a_window/win32_cleanup.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../loading_opengl/win32.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../loading_opengl/win32.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../web_stuff/web_gl_with_bare_wasm.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -216,13 +203,13 @@ crate, which gives come very clean and clear examples of how you open a GL conte
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../opening_a_window/win32_cleanup.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../loading_opengl/win32.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../loading_opengl/win32.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../web_stuff/web_gl_with_bare_wasm.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
