@@ -42,7 +42,7 @@ If you already have your own favorite way to spin up a local server that can ser
 
 ## Separate Folder
 
-This will have a new non-standard requirements,
+This will have a few non-standard bits of setup,
 so I'm going to put it in a `web_crate/` directory.
 
 First it needs its own `Cargo.toml` file:
