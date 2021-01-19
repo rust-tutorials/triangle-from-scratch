@@ -1,0 +1,4 @@
+[build]
+target = "wasm32-unknown-unknown"
+# You can enable this to reduce output size if you're on Nightly
+#rustflags = ["-Zstrip=symbols"]
