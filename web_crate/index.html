@@ -1,13 +1,17 @@
 <html>
 <canvas width="800" height="600" id="my_canvas"></canvas>
 
-<body> Hello.
+<body>
   <script>
     var gl;
     var canvas;
+    var wasm_memory;
+    var js_objects = [null];
+
+    const decoder = new TextDecoder();
 
     function setupCanvas() {
-      console.log("Setting up the canvas...");
+      console.log("Setting up the canvas.");
       let canvas = document.getElementById("my_canvas");
       gl = canvas.getContext("webgl");
       if (!gl) {
@@ -16,21 +20,77 @@
       }
     }
 
-    function clearToBlue() {
-      gl.clearColor(0.1, 0.1, 0.9, 1.0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    }
-
     var importObject = {
       env: {
         setupCanvas: setupCanvas,
-        clearToBlue: clearToBlue,
+
+        attachShader: function (program, shader) {
+          gl.attachShader(js_objects[program], js_objects[shader]);
+        },
+        bindBuffer: function (target, id) {
+          gl.bindBuffer(target, js_objects[id]);
+        },
+        bufferDataF32: function (target, data_ptr, data_length, usage) {
+          const data = new Float32Array(wasm_memory.buffer, data_ptr, data_length);
+          gl.bufferData(target, data, usage);
+        },
+        bufferDataU16: function (target, data_ptr, data_length, usage) {
+          const data = new Uint16Array(wasm_memory.buffer, data_ptr, data_length);
+          gl.bufferData(target, data, usage);
+        },
+        clear: function (mask) {
+          gl.clear(mask)
+        },
+        clearColor: function (r, g, b, a) {
+          gl.clearColor(r, g, b, a);
+        },
+        compileShader: function (shader) {
+          gl.compileShader(js_objects[shader]);
+        },
+        createBuffer: function () {
+          return js_objects.push(gl.createBuffer()) - 1;
+        },
+        createProgram: function () {
+          return js_objects.push(gl.createProgram()) - 1;
+        },
+        createShader: function (shader_type) {
+          return js_objects.push(gl.createShader(shader_type)) - 1;
+        },
+        drawElements: function (mode, count, type, offset) {
+          gl.drawElements(mode, count, type, offset);
+        },
+        enableVertexAttribArray: function (index) {
+          gl.enableVertexAttribArray(index)
+        },
+        getAttribLocation: function (program, pointer, length) {
+          const string_data = new Uint8Array(wasm_memory.buffer, pointer, length);
+          const string = decoder.decode(string_data);
+          return gl.getAttribLocation(js_objects[program], string);
+        },
+        linkProgram: function (program) {
+          gl.linkProgram(js_objects[program]);
+        },
+        shaderSource: function (shader, pointer, length) {
+          const string_data = new Uint8Array(wasm_memory.buffer, pointer, length);
+          const string = decoder.decode(string_data);
+          gl.shaderSource(js_objects[shader], string);
+        },
+        useProgram: function (program) {
+          gl.useProgram(js_objects[program]);
+        },
+        vertexAttribPointer: function (index, size, type, normalized, stride, offset) {
+          gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
+        },
       }
     };
 
     const mod_path = 'target/wasm32-unknown-unknown/release/triangle_from_scratch_web_crate.wasm';
     WebAssembly.instantiateStreaming(fetch(mod_path), importObject)
       .then(results => {
+        console.log("Wasm instance created.");
+        // assign the memory to be usable by the other functions
+        wasm_memory = results.instance.exports.memory;
+        // start the wasm
         results.instance.exports.start();
       });
   </script>
