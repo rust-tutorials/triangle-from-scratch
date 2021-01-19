@@ -55,7 +55,7 @@ edition = "2018"
 license = "Zlib OR Apache-2.0 OR MIT"
 ```
 
-Now also, to make a wasm library like we need we have to tell Rust that the [crate-type](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field)
+And to make a wasm library we need to tell Rust that the [crate-type](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field)
 will be `cdylib`:
 ```toml
 [lib]
