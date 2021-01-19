@@ -28,7 +28,9 @@ It lets you strip debugging symbols and such from the program, reducing the size
 You can also do this without an extra tool via a Nightly `rustc` flag.
 
 Once you've compiled your program to wasm you'll also need some way to display it.
-Unfortunately, you can't simply open a local file in your browser using a `file://` address.
+
+**Unfortunately, you can't simply open a local file in your browser using a `file://` address.**
+
 This is fine for a plain HTML file,
 but browsers (rightly) get more paranoid every day,
 so they don't support wasm execution in pages loaded through a file address.
