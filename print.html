@@ -5309,13 +5309,13 @@ To fix this, we can get <code>cargo-watch</code></p>
 <p>The <code>-x &quot;build --release&quot;</code> executes &quot;cargo build --release&quot; each time <code>cargo-watch</code> detects a change.</p>
 <p>Now we will always have both the latest HTML <em>and</em> wasm in our browser page.</p>
 <h2><a class="header" href="#drawing-a-triangle" id="drawing-a-triangle">Drawing A Triangle</a></h2>
-<p>We need a little more wasm/js interaction than what we have to make a complete triangle.
-Let's check out the additional stuff we'll need for a proper triangle draw.</p>
+<p>We need a little more wasm/js interaction than what we have right now to actually draw a triangle.</p>
 <p>If you want a larger WebGL tutorial you should check out <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial">the one on MDN</a>.
-We won't go into all of it, but there's some good stuff there.</p>
-<p>WebGL is based on OpenGL ES 2.0,
+WebGL is based on OpenGL ES 2.0,
 which is based on OpenGL 2.0,
 so if you already know about GL stuff, this will probably look very familiar.</p>
+<p>For now, we'll mostly skip over the WebGL explanations themselves.
+Instead we'll focus on the interoperation guts that let our wasm interact with WebGL.</p>
 <h3><a class="header" href="#the-rust-code" id="the-rust-code">The Rust Code</a></h3>
 <p>What we want is for our rust code to look something like this:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
