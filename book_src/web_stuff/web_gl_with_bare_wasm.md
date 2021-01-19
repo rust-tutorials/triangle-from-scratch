@@ -418,8 +418,8 @@ pub type GLbitmask = u32;
 pub type GLuint = u32;
 pub type GLint = i32;
 pub type GLsizei = i32;
-// Note(kettle11): GLintptr should be an i64, but Wasm can't pass those, so for
-// now just use an i32.
+// Note(kettle11): GLintptr should be an i64, but those can't be properly passed
+// between Wasm and Javascript, so for now just use an i32.
 pub type GLintptr = i32;
 
 #[derive(Clone, Copy)]
