@@ -4,6 +4,14 @@
 Before we begin I should give a big thanks to [kettle11](https://github.com/kettle11),
 who made the [hello_triangle_wasm_rust](https://github.com/kettle11/hello_triangle_wasm_rust) example for me.
 
+Also, I should probably have an extra reminder at the top of this lesson:
+This is the "doing it all yourself" style.
+Much of the "Rust for Wasm" ecosystem uses a crate called [wasm-bindgen](https://rustwasm.github.io/docs/wasm-bindgen/introduction.html).
+In the same way that, if you "just want to open a window" you would often reach for `winit` or `sdl2` or something,
+if you "just want to show something in the browser" you'll often use `wasm-bindgen` (and the crates that go with it).
+People will at least *expect* that you're using `wasm-bindgen` if you get lost and need to ask someone for help.
+They've got a book of their own, with many many examples, so have a look there if that's what you wanna do.
+
 ## Toolchain Setup
 
 Before we even begin, we'll need to take a few extra steps to have the right compiler and tools available.
