@@ -1,7 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use triangle_from_scratch::win32::*;
+use core::ptr::NonNull;
+use triangle_from_scratch::{vk::*, win32::*, *};
 
+#[allow(non_snake_case)]
 fn main() {
   let sample_window_class = "Sample Window Class";
   let sample_window_class_wn = wide_null(sample_window_class);
@@ -25,6 +27,15 @@ fn main() {
     )
   }
   .unwrap();
+
+  let vk_module_handle = load_library("vulkan-1.dll").unwrap();
+  let vkGetInstanceProcAddr = unsafe {
+    core::mem::transmute::<NonNull<c_void>, PFN_vkGetInstanceProcAddr>(
+      get_proc_address(vk_module_handle, c_str!("vkGetInstanceProcAddr"))
+        .unwrap(),
+    )
+  };
+
   let _previously_visible = unsafe { ShowWindow(hwnd, SW_SHOW) };
 
   loop {

@@ -8,7 +8,7 @@ pub use core::ffi::c_void;
 
 use core::{
   mem::size_of,
-  ptr::{null, null_mut},
+  ptr::{null, null_mut, NonNull},
 };
 
 use crate::*;
@@ -1533,5 +1533,20 @@ pub fn load_library(name: &str) -> Result<HMODULE, Win32Error> {
     Err(get_last_error())
   } else {
     Ok(hmodule)
+  }
+}
+
+/// Gets a function pointer from a loaded library.
+///
+/// The input slice must be null terminated or you'll get an app error.
+/// Use the [`c_str!`] macro.
+pub fn get_proc_address(
+  hmodule: HMODULE, name: &[u8],
+) -> Result<NonNull<c_void>, Win32Error> {
+  if let Some(0) = name.last() {
+    let p = unsafe { GetProcAddress(hmodule, name.as_ptr().cast()) };
+    NonNull::new(p).ok_or_else(|| get_last_error())
+  } else {
+    Err(Win32Error(Win32Error::APPLICATION_ERROR_BIT))
   }
 }

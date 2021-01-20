@@ -13,6 +13,8 @@ use win32::*;
 
 pub mod gl;
 
+pub mod vk;
+
 /// Gathers up the bytes from a pointer.
 ///
 /// The byte sequence must be valid and null-terminated.
