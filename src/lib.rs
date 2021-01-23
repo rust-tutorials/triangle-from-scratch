@@ -37,3 +37,11 @@ pub fn min_alloc_lossy_into_string(bytes: Vec<u8>) -> String {
     Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
   }
 }
+
+pub fn str_from_null_terminated_byte_array(
+  bytes: &[u8],
+) -> Result<&str, core::str::Utf8Error> {
+  let terminal_position =
+    bytes.iter().copied().position(|u| u == 0).unwrap_or(bytes.len());
+  core::str::from_utf8(&bytes[..terminal_position])
+}
