@@ -2,7 +2,7 @@
 
 use core::ffi::c_void;
 
-use crate::str_from_null_terminated_byte_array;
+use crate::str_from_null_terminated_byte_slice;
 
 /// Maximum size of an extension name.
 pub const VK_MAX_EXTENSION_NAME_SIZE: usize = 256;
@@ -192,7 +192,7 @@ impl core::fmt::Debug for VulkanVersion {
     } else {
       write!(
         f,
-        "VulkanVersion {{ major: {major}, minor: {minor}, patch: {patch} }}",
+        "VulkanVersion({major}.{minor}.{patch})",
         major = self.major(),
         minor = self.minor(),
         patch = self.patch(),
@@ -248,9 +248,9 @@ pub struct VkLayerProperties {
 impl core::fmt::Debug for VkLayerProperties {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let name =
-      str_from_null_terminated_byte_array(&self.layerName).unwrap_or("");
+      str_from_null_terminated_byte_slice(&self.layerName).unwrap_or("");
     let the_description =
-      str_from_null_terminated_byte_array(&self.description).unwrap_or("");
+      str_from_null_terminated_byte_slice(&self.description).unwrap_or("");
     write!(f, "VkLayerProperties {{ name: {name:?}, spec: {spec:?}, impl: {implementation:?}, desc: {description:?} }}",
       name = name,
       spec = self.specVersion,
@@ -269,7 +269,7 @@ pub struct VkExtensionProperties {
 impl core::fmt::Debug for VkExtensionProperties {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
     let name =
-      str_from_null_terminated_byte_array(&self.extensionName).unwrap_or("");
+      str_from_null_terminated_byte_slice(&self.extensionName).unwrap_or("");
     write!(
       f,
       "VkExtensionProperties {{ name: {name:?}, spec: {spec:?} }}",

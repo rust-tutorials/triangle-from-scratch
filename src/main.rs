@@ -111,7 +111,7 @@ fn main() {
       ),
     }
     for layer in available_layers.iter() {
-      let name = str_from_null_terminated_byte_array(&layer.layerName)
+      let name = str_from_null_terminated_byte_slice(&layer.layerName)
         .unwrap_or("unknown");
       match do_vkEnumerateInstanceExtensionProperties(
         vkEnumerateInstanceExtensionProperties,

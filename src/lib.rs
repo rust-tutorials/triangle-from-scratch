@@ -38,7 +38,10 @@ pub fn min_alloc_lossy_into_string(bytes: Vec<u8>) -> String {
   }
 }
 
-pub fn str_from_null_terminated_byte_array(
+/// Makes a `&str` from all bytes before the first `0` within the byte slice.
+///
+/// If the slice has no `0` then the entire slice is used.
+pub fn str_from_null_terminated_byte_slice(
   bytes: &[u8],
 ) -> Result<&str, core::str::Utf8Error> {
   let terminal_position =

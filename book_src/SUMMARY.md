@@ -8,6 +8,8 @@
   * [Win32](loading_opengl/win32.md)
 * [Loading Vulkan](loading_vulkan/index.md)
   * [Win32](loading_vulkan/win32.md)
+  * [Using vkGetInstanceProcAddr](loading_vulkan/using_vkGetInstanceProcAddr.md)
+  * [Vulkan Compute](loading_vulkan/vulkan_compute.md)
 * [Web Stuff](web_stuff/index.md)
   * [WebGL with bare WASM](web_stuff/web_gl_with_bare_wasm.md)
 * [Appendix](appendix/index.md)
