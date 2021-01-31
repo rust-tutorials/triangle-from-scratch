@@ -8,7 +8,7 @@ pub use core::ffi::c_void;
 
 use core::{
   mem::size_of,
-  ptr::{null, null_mut},
+  ptr::{null, null_mut, NonNull},
 };
 
 use crate::*;
@@ -28,44 +28,44 @@ macro_rules! unsafe_impl_default_zeroed {
 pub type ATOM = WORD;
 pub type BOOL = c_int;
 pub type BYTE = u8;
+pub type c_char = i8;
+pub type c_float = f32;
 pub type c_int = i32;
 pub type c_long = i32;
 pub type c_uint = u32;
 pub type c_ulong = u32;
 pub type c_ushort = u16;
-pub type c_char = i8;
 pub type DWORD = c_ulong;
+pub type FLOAT = c_float;
 pub type HANDLE = PVOID;
 pub type HBRUSH = HANDLE;
 pub type HCURSOR = HICON;
 pub type HDC = HANDLE;
 pub type HICON = HANDLE;
 pub type HINSTANCE = HANDLE;
+pub type HLOCAL = HANDLE;
 pub type HMENU = HANDLE;
 pub type HMODULE = HINSTANCE;
 pub type HWND = HANDLE;
 pub type LONG = c_long;
 pub type LONG_PTR = isize;
 pub type LPARAM = LONG_PTR;
+pub type LPCVOID = *const c_void;
 pub type LPCWSTR = *const WCHAR;
 pub type LPMSG = *mut MSG;
 pub type LPPAINTSTRUCT = *mut PAINTSTRUCT;
 pub type LPVOID = *mut c_void;
-pub type LPCVOID = *const c_void;
-pub type va_list = *mut c_char;
 pub type LPWSTR = *mut WCHAR;
 pub type LRESULT = LONG_PTR;
 pub type PVOID = *mut c_void;
 pub type UINT = c_uint;
 pub type UINT_PTR = usize;
 pub type ULONG_PTR = usize;
+pub type va_list = *mut c_char;
 pub type WCHAR = wchar_t;
 pub type wchar_t = u16;
 pub type WORD = c_ushort;
 pub type WPARAM = UINT_PTR;
-pub type HLOCAL = HANDLE;
-pub type FLOAT = c_float;
-pub type c_float = f32;
 
 pub type WNDPROC = Option<
   unsafe extern "system" fn(
@@ -1533,5 +1533,20 @@ pub fn load_library(name: &str) -> Result<HMODULE, Win32Error> {
     Err(get_last_error())
   } else {
     Ok(hmodule)
+  }
+}
+
+/// Gets a function pointer from a loaded library.
+///
+/// The input slice must be null terminated or you'll get an app error.
+/// Use the [`c_str!`] macro.
+pub fn get_proc_address(
+  hmodule: HMODULE, name: &[u8],
+) -> Result<NonNull<c_void>, Win32Error> {
+  if let Some(0) = name.last() {
+    let p = unsafe { GetProcAddress(hmodule, name.as_ptr().cast()) };
+    NonNull::new(p).ok_or_else(|| get_last_error())
+  } else {
+    Err(Win32Error(Win32Error::APPLICATION_ERROR_BIT))
   }
 }
