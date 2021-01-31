@@ -33,27 +33,94 @@ macro_rules! vk_define_handle {
   };
 }
 vk_define_handle!(VkInstance);
+vk_define_handle!(VkPhysicalDevice);
 
 macro_rules! define_enumeration {
-  ($id:ident) => {
+  ($(#[$m:meta])* $id:ident) => {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(transparent)]
+    $(#[$m])*
     pub struct $id(pub u32);
   };
 }
 define_enumeration!(VkInternalAllocationType);
 define_enumeration!(VkStructureType);
 define_enumeration!(VkSystemAllocationScope);
-define_enumeration!(VkResult);
+define_enumeration!(
+  #[must_use]
+  VkResult
+);
 
 macro_rules! define_flags {
   ($id:ident) => {
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Copy, Clone)]
     #[repr(transparent)]
     pub struct $id(pub u32);
+    impl core::ops::BitAnd for $id {
+      type Output = Self;
+      fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+      }
+    }
+    impl core::ops::BitOr for $id {
+      type Output = Self;
+      fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+      }
+    }
+    impl core::ops::BitXor for $id {
+      type Output = Self;
+      fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+      }
+    }
+    impl core::ops::Not for $id {
+      type Output = Self;
+      fn not(self) -> Self::Output {
+        Self(!self.0)
+      }
+    }
   };
 }
 define_flags!(VkInstanceCreateFlags);
+impl core::fmt::Debug for VkInstanceCreateFlags {
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    write!(f, "VkInstanceCreateFlags")
+  }
+}
+define_flags!(VkQueueFlags);
+impl core::fmt::Debug for VkQueueFlags {
+  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+    write!(f, "VkQueueFlags {{")?;
+    let mut printed = false;
+    if (*self & VK_QUEUE_GRAPHICS_BIT).0 != 0 {
+      write!(f, "Graphics")?;
+      printed = true;
+    }
+    if (*self & VK_QUEUE_COMPUTE_BIT).0 != 0 {
+      write!(f, "{}Compute", if printed { ", " } else { "" })?;
+      printed = true;
+    }
+    if (*self & VK_QUEUE_TRANSFER_BIT).0 != 0 {
+      write!(f, "{}Transfer", if printed { ", " } else { "" })?;
+      printed = true;
+    }
+    if (*self & VK_QUEUE_SPARSE_BINDING_BIT).0 != 0 {
+      write!(f, "{}Sparse_Binding", if printed { ", " } else { "" })?;
+      printed = true;
+    }
+    if (*self & VK_QUEUE_PROTECTED_BIT).0 != 0 {
+      write!(f, "{}Protected", if printed { ", " } else { "" })?;
+    }
+    write!(f, "}}")
+  }
+}
+
+pub const VK_QUEUE_GRAPHICS_BIT: VkQueueFlags = VkQueueFlags(0x00000001);
+pub const VK_QUEUE_COMPUTE_BIT: VkQueueFlags = VkQueueFlags(0x00000002);
+pub const VK_QUEUE_TRANSFER_BIT: VkQueueFlags = VkQueueFlags(0x00000004);
+pub const VK_QUEUE_SPARSE_BINDING_BIT: VkQueueFlags = VkQueueFlags(0x00000008);
+pub const VK_QUEUE_PROTECTED_BIT: VkQueueFlags = VkQueueFlags(0x00000010);
 
 macro_rules! define_fn_ptr {
   ($(#[$m:meta])* $pfn:ident<$t_name:ident> = Option<$raw_f:ty>) => {
@@ -131,7 +198,7 @@ define_fn_ptr!(
     pCreateInfo: &VkInstanceCreateInfo,
     pAllocator: Option<&VkAllocationCallbacks>,
     pInstance: &mut VkInstance
-  )>
+  ) -> VkResult>
 );
 
 define_fn_ptr!(
@@ -160,6 +227,24 @@ define_fn_ptr!(
   ) -> VkResult>
 );
 
+define_fn_ptr!(
+  /// [vkEnumeratePhysicalDevices](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html)
+  PFN_vkEnumeratePhysicalDevices<vkEnumeratePhysicalDevices_t> = Option<unsafe extern "system" fn(
+    instance: VkInstance,
+    pPhysicalDeviceCount: &mut u32,
+    pPhysicalDevices: *mut VkPhysicalDevice,
+  ) -> VkResult>
+);
+
+define_fn_ptr!(
+  /// [vkGetPhysicalDeviceQueueFamilyProperties](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html)
+  PFN_vkGetPhysicalDeviceQueueFamilyProperties<vkGetPhysicalDeviceQueueFamilyProperties_t> = Option<unsafe extern "system" fn(
+    physicalDevice: VkPhysicalDevice,
+    pQueueFamilyPropertyCount: &mut u32,
+    pQueueFamilyProperties: *mut VkQueueFamilyProperties,
+  )>
+);
+
 /// Provides simple access to a vulkan version value.
 ///
 /// This isn't an official Vulkan type, it's just a Rusty helper type.
@@ -178,12 +263,12 @@ impl VulkanVersion {
   pub const fn patch(self) -> u32 {
     self.0 & 0xfff
   }
-  pub const fn make(major: u32, minor: u32, patch: u32) -> Self {
+  pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
     Self((major << 22) | (minor << 22) | patch)
   }
-  pub const _1_0: VulkanVersion = VulkanVersion::make(1, 0, 0);
-  pub const _1_1: VulkanVersion = VulkanVersion::make(1, 1, 0);
-  pub const _1_2: VulkanVersion = VulkanVersion::make(1, 2, 0);
+  pub const _1_0: VulkanVersion = VulkanVersion::new(1, 0, 0);
+  pub const _1_1: VulkanVersion = VulkanVersion::new(1, 1, 0);
+  pub const _1_2: VulkanVersion = VulkanVersion::new(1, 2, 0);
 }
 impl core::fmt::Debug for VulkanVersion {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -210,8 +295,17 @@ pub struct VkApplicationInfo {
   pub applicationVersion: u32,
   pub pEngineName: *const u8,
   pub engineVersion: u32,
-  pub apiVersion: u32,
+  pub apiVersion: VulkanVersion,
 }
+impl Default for VkApplicationInfo {
+  fn default() -> Self {
+    let mut x: Self = unsafe { core::mem::zeroed() };
+    x.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    x
+  }
+}
+pub const VK_STRUCTURE_TYPE_APPLICATION_INFO: VkStructureType =
+  VkStructureType(0);
 
 /// [VkInstanceCreateInfo](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html)
 #[repr(C)]
@@ -225,6 +319,15 @@ pub struct VkInstanceCreateInfo {
   pub enabledExtensionCount: u32,
   pub ppEnabledExtensionNames: *const *const u8,
 }
+impl Default for VkInstanceCreateInfo {
+  fn default() -> Self {
+    let mut x: Self = unsafe { core::mem::zeroed() };
+    x.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    x
+  }
+}
+pub const VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO: VkStructureType =
+  VkStructureType(1);
 
 /// [VkAllocationCallbacks](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkAllocationCallbacks.html)
 #[repr(C)]
@@ -277,4 +380,23 @@ impl core::fmt::Debug for VkExtensionProperties {
       spec = self.specVersion,
     )
   }
+}
+
+/// [VkQueueFamilyProperties](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkQueueFamilyProperties.html)
+#[repr(C)]
+#[derive(Debug)]
+pub struct VkQueueFamilyProperties {
+  pub queueFlags: VkQueueFlags,
+  pub queueCount: u32,
+  pub timestampValidBits: u32,
+  pub minImageTransferGranularity: VkExtent3D,
+}
+
+/// [VkExtent3D](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkExtent3D.html)
+#[repr(C)]
+#[derive(Debug)]
+pub struct VkExtent3D {
+  pub width: u32,
+  pub height: u32,
+  pub depth: u32,
 }

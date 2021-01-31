@@ -176,11 +176,11 @@ pub type PFN_vkGetInstanceProcAddr = Option<
 >;
 ```
 
-And then use that transmute we talked about:
+And then use that `transmute` we talked about:
 ```rust
   let vk_module_handle = load_library("vulkan-1.dll").unwrap();
   let vkGetInstanceProcAddr = unsafe {
-    core::mem::transmute::<NonNull<c_void>, PFN_vkGetInstanceProcAddr>(
+    transmute::<NonNull<c_void>, PFN_vkGetInstanceProcAddr>(
       get_proc_address(vk_module_handle, c_str!("vkGetInstanceProcAddr"))
         .unwrap(),
     )
@@ -224,6 +224,42 @@ So really there's *essentially* no difference.
 It's 8-bits either way.
 Since it's a compatible definition, we'll have our definition use `*const u8`.
 That way, we'll be able to easily use this with our `c_str!` macro (which produces `&[u8]` values).
+
+Finally, we don't really want to ever unload that vulkan library.
+If we did, all our vulkan function pointers would become invalidated.
+Also we don't want to accidentally load any *other* function pointers using `get_proc_address` and the library handle,
+instead of properly going through `vkGetInstanceProcAddr` (which I **totally** did in a previous draft of this tutorial).
+To fix both of these things at once, we'll open the library handle inside the block that assigns `vkGetInstanceProcAddr`,
+and then just... forget to close it.
+The "leaked" handle will continue to be live for the rest of the program,
+and the OS will pick up after us when the process dies.
+
+It might at first seem irresponsible to not close a "resource" like this,
+but with dynamic libraries this is honestly best practice.
+
+In fact, trying to unload and reload a dynamic library,
+such as for "live hotloading",
+can cause horrible soundness issues, because of some of the optimizations that Rust does.
+I'm not saying you *can't* do it,
+I'm just saying that it should be considered a development-only sort of thing,
+and it might explode on you.
+Don't ship it to users, keep it just for development purposes.
+
+Anyway, here's our final form of how to get `vkGetInstanceProcAddr` on Windows:
+```rust
+  let vkGetInstanceProcAddr = unsafe {
+    let vk_module_handle = load_library("vulkan-1.dll").unwrap();
+    let fn_ptr: NonNull<c_void> =
+      get_proc_address(vk_module_handle, c_str!("vkGetInstanceProcAddr"))
+        .unwrap();
+    transmute::<_, vkGetInstanceProcAddr_t>(fn_ptr)
+    // Note(Lokathor): Here we're just "leaking" the vulkan library handle, and
+    // leaving the library loaded for the rest of the program. The OS will clean
+    // things up when the process exits.
+  };
+```
+
+Once all those background types are defined for us, it's actually simple!
 
 ## End Of Chapter
 

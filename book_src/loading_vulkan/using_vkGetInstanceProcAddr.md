@@ -9,7 +9,7 @@ You give it names of functions to look up,
 and it gives you pointers to those functions,
 assuming they're available.
 
-Without an instance, we're limited to being able to look up only the following functions:
+Without an **Instance**, we're limited to being able to look up only the following functions:
 * [vkEnumerateInstanceVersion](https://renderdoc.org/vkspec_chunked/chap5.html#vkEnumerateInstanceVersion)
   lets you find out what version of vulkan is supported.
   It was added in 1.1, so if it's not available then you're limited to 1.0
@@ -58,15 +58,18 @@ pub type vkCreateInstance_t = unsafe extern "system" fn(
     pCreateInfo: &VkInstanceCreateInfo,
     pAllocator: Option<&VkAllocationCallbacks>,
     pInstance: &mut VkInstance
-  );
+  ) -> VkResult;
 ```
 The main time that you *can't* use references instead of pointers is with "list of" values.
 If you have a list of things and you're supposed to pass a pointer to the first element,
 then passing a reference instead would tag things with the wrong LLVM IR internally.
 That's why `vkGetInstanceProcAddr` didn't use `&u8` for the function name argument.
-Still, most of the time a pointer is only to a single struct, and in those cases we can use references.
+Still, often enough a pointer is only to a single struct, and in those cases we can use references.
 
-Unfortunately for us... that will kinda *explode* our module with new stuff.
+Unfortunately for us,
+this one innocent little function pointer type is gonna *explode* our module with additional required definitions.
+
+### VkInstanceCreateInfo
 
 The [VkInstanceCreateInfo](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html)
 struct follows a pattern we'll become familiar with as we see more Vulkan.
@@ -89,7 +92,18 @@ pub struct VkInstanceCreateInfo {
   pub enabledExtensionCount: u32,
   pub ppEnabledExtensionNames: *const *const u8,
 }
+impl Default for VkInstanceCreateInfo {
+  fn default() -> Self {
+    let mut x: Self = unsafe { core::mem::zeroed() };
+    x.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    x
+  }
+}
+pub const VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO: VkStructureType =
+  VkStructureType(1);
 ```
+Because the `sType` field must *always* be a specific value for this type of struct,
+we just go ahead and set it within the `Default` impl for the type.
 
 Except that now we need to have [VkStructureType](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkStructureType.html).
 This is a C-style enum.
@@ -99,21 +113,27 @@ and since integers can fairly freely convert between types automatically there's
 We can improve the situation a little more by using the newtype pattern.
 We're going to quickly get a lot of these C-styled enums, so let's make a macro for this.
 For the moment, the macro will just define the type.
-We won't connect names and values right now.
+We won't declare all the names and values within the macro right now, though maybe we could later.
 Also, I'll throw in the other enumerations we'll soon need too.
 ```rust
 macro_rules! define_enumeration {
-  ($id:ident) => {
+  ($(#[$m:meta])* $id:ident) => {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(transparent)]
+    $(#[$m])*
     pub struct $id(pub u32);
   };
 }
 define_enumeration!(VkInternalAllocationType);
 define_enumeration!(VkStructureType);
 define_enumeration!(VkSystemAllocationScope);
-define_enumeration!(VkResult);
+define_enumeration!(
+  #[must_use]
+  VkResult
+);
 ```
+
+### VkApplicationInfo
 
 Okay now we need [VkApplicationInfo](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html).
 Look, another `VkStructureType` as the first field,
@@ -131,7 +151,18 @@ pub struct VkApplicationInfo {
   pub engineVersion: u32,
   pub apiVersion: u32,
 }
+impl Default for VkApplicationInfo {
+  fn default() -> Self {
+    let mut x: Self = unsafe { core::mem::zeroed() };
+    x.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    x
+  }
+}
+pub const VK_STRUCTURE_TYPE_APPLICATION_INFO: VkStructureType =
+  VkStructureType(0);
 ```
+
+### VkAllocationCallbacks
 
 Okay so, I think that means we're up to the [VkAllocationCallbacks](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkAllocationCallbacks.html)
 ```rust
@@ -186,7 +217,35 @@ define_fn_ptr!(
 // We don't use them in this lesson, so i'll skip the rest.
 ```
 
-And now that it's all defined,
+### VkInstance
+
+The `VkInstance` type is what Vulkan calls a "handle".
+It's just an opaque void pointer.
+
+```rust
+macro_rules! vk_define_handle {
+  ($($id:ident),*) => {
+    $(
+      #[derive(Debug, Copy, Clone)]
+      #[repr(transparent)]
+      pub struct $id(*mut c_void);
+      impl $id {
+        pub const fn null() -> Self {
+          Self(core::ptr::null_mut())
+        }
+        pub fn is_null(self) -> bool {
+          self.0.is_null()
+        }
+      }
+    )*
+  };
+}
+vk_define_handle!(VkInstance);
+```
+
+### Getting the vkGetInstanceProcAddr pointer
+
+And now that everything is all defined,
 we can look up the function pointer in our program's `main` function:
 ```rust
   let vk_module_handle = load_library("vulkan-1.dll").unwrap();
@@ -205,9 +264,9 @@ we can look up the function pointer in our program's `main` function:
 
 Very good.
 
-To actually call `vkCreateInstance` we'll need to fill out a `VkInstanceCreateInfo` value.
-However, to fill that in we'll need to know a little more about what the local Vulkan has available.
-Let's have a look at those other functions we can call without an instance.
+To actually *call* `vkCreateInstance` we'll need to have filled out a `VkInstanceCreateInfo` value.
+To do that we'll need to know a little more about what the local Vulkan implementation has available.
+Let's have a look at those other functions we can call *without* an instance.
 
 ## `vkEnumerateInstanceVersion`
 
@@ -219,7 +278,7 @@ Technically the function was added in VK 1.1,
 so if only 1.0 is available, we won't even get a function pointer back.
 
 The way that a Vulkan version works is that it's a single `u32` value,
-with the major.minor.patch info packed into the bits of the `u32`.
+with the `major.minor.patch` info packed into the bits of the `u32`.
 
 Similar to how enums in C provide little type enforcement,
 making the version values just be a `u32` is a little too fast and loose for me.
@@ -246,12 +305,12 @@ impl VulkanVersion {
   pub const fn patch(self) -> u32 {
     self.0 & 0xfff
   }
-  pub const fn make(major: u32, minor: u32, patch: u32) -> Self {
+  pub const fn new(major: u32, minor: u32, patch: u32) -> Self {
     Self((major << 22) | (minor << 22) | patch)
   }
-  pub const _1_0: VulkanVersion = VulkanVersion::make(1, 0, 0);
-  pub const _1_1: VulkanVersion = VulkanVersion::make(1, 1, 0);
-  pub const _1_2: VulkanVersion = VulkanVersion::make(1, 2, 0);
+  pub const _1_0: VulkanVersion = VulkanVersion::new(1, 0, 0);
+  pub const _1_1: VulkanVersion = VulkanVersion::new(1, 1, 0);
+  pub const _1_2: VulkanVersion = VulkanVersion::new(1, 2, 0);
 }
 impl core::fmt::Debug for VulkanVersion {
   fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -280,31 +339,41 @@ define_fn_ptr!(
 );
 ```
 
+Also we should update the `apiVersion` field of `VkApplicationInfo` to use our newtype:
+```rust
+/// [VkApplicationInfo](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkApplicationInfo.html)
+#[repr(C)]
+pub struct VkApplicationInfo {
+  pub sType: VkStructureType,
+  pub pNext: *const c_void,
+  pub pApplicationName: *const u8,
+  pub applicationVersion: u32,
+  pub pEngineName: *const u8,
+  pub engineVersion: u32,
+  pub apiVersion: VulkanVersion,
+}
+```
+
 Now we'll *attempt* to call it in our code,
 but remember if we don't find the function pointer we'll default the version to 1.0:
 ```rust
-  let vkCreateInstance = unsafe {
-    core::mem::transmute::<NonNull<c_void>, vkCreateInstance_t>(
-      get_proc_address(vk_module_handle, c_str!("vkCreateInstance")).unwrap(),
-    )
-  };
-  let instance_version =
-    get_proc_address(vk_module_handle, c_str!("vkEnumerateInstanceVersion"))
-      .map(|nn| {
-        let vkEnumerateInstanceVersion = unsafe {
-          core::mem::transmute::<NonNull<c_void>, vkEnumerateInstanceVersion_t>(
-            nn,
-          )
-        };
-        let mut v = VulkanVersion::default();
-        let _ = unsafe { vkEnumerateInstanceVersion(&mut v) };
-        v
-      })
-      .unwrap_or(VulkanVersion::_1_0);
+  let instance_version = unsafe {
+    let p = vkGetInstanceProcAddr(
+      VkInstance::null(),
+      c_str!("vkEnumerateInstanceVersion").as_ptr(),
+    );
+    transmute::<_, PFN_vkEnumerateInstanceVersion>(p)
+  }
+  .map(|vkEnumerateInstanceVersion| {
+    let mut v = VulkanVersion::default();
+    let _ = unsafe { vkEnumerateInstanceVersion(&mut v) };
+    v
+  })
+  .unwrap_or(VulkanVersion::_1_0);
   println!("vkEnumerateInstanceVersion reports: {:?}", instance_version);
 ```
 
-Notice that there's a VkResult that we're ignoring.
+Notice that there's a `VkResult` that we're ignoring.
 If we check the spec we see this:
 
 > **Note:**
@@ -396,19 +465,16 @@ pub fn str_from_null_terminated_byte_slice(
 
 Now we can check what layers are available:
 ```rust
-  let available_layers = get_proc_address(
-    vk_module_handle,
-    c_str!("vkEnumerateInstanceLayerProperties"),
-  )
-  .map(|nn| {
-    let vkEnumerateInstanceLayerProperties = unsafe {
-      core::mem::transmute::<
-        NonNull<c_void>,
-        vkEnumerateInstanceLayerProperties_t,
-      >(nn)
-    };
+  let available_layers = unsafe {
+    let p = vkGetInstanceProcAddr(
+      VkInstance::null(),
+      c_str!("vkEnumerateInstanceLayerProperties").as_ptr(),
+    );
+    transmute::<_, PFN_vkEnumerateInstanceLayerProperties>(p)
+  }
+  .map(|vkEnumerateInstanceLayerProperties| {
     let mut property_count: u32 = 0;
-    unsafe {
+    let _ = unsafe {
       vkEnumerateInstanceLayerProperties(&mut property_count, null_mut())
     };
     let mut v: Vec<VkLayerProperties> =
@@ -531,7 +597,7 @@ pub fn do_vkEnumerateInstanceExtensionProperties(
     None => null(),
   };
   let mut ext_count: u32 = 0;
-  unsafe { f(layer_name_ptr, &mut ext_count, null_mut()) };
+  let _ = unsafe { f(layer_name_ptr, &mut ext_count, null_mut()) };
   let mut v: Vec<VkExtensionProperties> =
     Vec::with_capacity(ext_count as usize);
   let got = unsafe { f(layer_name_ptr, &mut ext_count, v.as_mut_ptr()) };
@@ -547,21 +613,15 @@ pub fn do_vkEnumerateInstanceExtensionProperties(
 And now we can call it.
 Unfortunately, the long name of the vulkan function means that this part of the code gets fairly tall.
 ```rust
-  let _ = get_proc_address(
-    vk_module_handle,
-    c_str!("vkEnumerateInstanceExtensionProperties"),
-  )
-  .map(|nn| {
-    let vkEnumerateInstanceExtensionProperties = unsafe {
-      core::mem::transmute::<
-        NonNull<c_void>,
-        vkEnumerateInstanceExtensionProperties_t,
-      >(nn)
-    };
-    match do_vkEnumerateInstanceExtensionProperties(
-      vkEnumerateInstanceExtensionProperties,
-      None,
-    ) {
+  let _ = unsafe {
+    let p = vkGetInstanceProcAddr(
+      VkInstance::null(),
+      c_str!("vkEnumerateInstanceExtensionProperties").as_ptr(),
+    );
+    transmute::<_, PFN_vkEnumerateInstanceExtensionProperties>(p)
+  }
+  .map(|f| {
+    match do_vkEnumerateInstanceExtensionProperties(f, None) {
       Ok(v) => {
         println!("vkEnumerateInstanceExtensionProperties(root): {:#?}", v)
       }
@@ -573,10 +633,8 @@ Unfortunately, the long name of the vulkan function means that this part of the 
     for layer in available_layers.iter() {
       let name = str_from_null_terminated_byte_slice(&layer.layerName)
         .unwrap_or("unknown");
-      match do_vkEnumerateInstanceExtensionProperties(
-        vkEnumerateInstanceExtensionProperties,
-        Some(&layer.layerName),
-      ) {
+      match do_vkEnumerateInstanceExtensionProperties(f, Some(&layer.layerName))
+      {
         Ok(v) => println!(
           "vkEnumerateInstanceExtensionProperties({name}): {vec:#?}",
           name = name,
