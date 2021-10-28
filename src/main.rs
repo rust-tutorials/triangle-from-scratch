@@ -165,7 +165,12 @@ pub unsafe extern "system" fn window_procedure(
         return 0;
       }
       let ptr = (*createstruct).lpCreateParams as *mut WindowData;
-      return set_window_userdata::<WindowData>(hwnd, ptr).is_ok() as LRESULT;
+      if let Err(e) = set_window_userdata::<WindowData>(hwnd, ptr) {
+        println!("Couldn't set the WindowData pointer: {}", e);
+        return 0;
+      }
+      // This is required for the window title to be drawn!
+      return DefWindowProcW(hwnd, msg, wparam, lparam);
     }
     WM_CREATE => println!("WM_CREATE"),
     WM_CLOSE => {
