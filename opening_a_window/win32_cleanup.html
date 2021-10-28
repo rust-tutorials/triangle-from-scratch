@@ -4,47 +4,27 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Win32 Cleanup - Triangle From Scratch</title>
-        
-        
-
-
         <!-- Custom HTML head -->
-        
-
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        
         <link rel="icon" href="../favicon.svg">
-        
-        
         <link rel="shortcut icon" href="../favicon.png">
-        
         <link rel="stylesheet" href="../css/variables.css">
         <link rel="stylesheet" href="../css/general.css">
         <link rel="stylesheet" href="../css/chrome.css">
-        
         <link rel="stylesheet" href="../css/print.css" media="print">
-        
-
         <!-- Fonts -->
         <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="../fonts/fonts.css">
-        
-
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="../highlight.css">
         <link rel="stylesheet" href="../tomorrow-night.css">
         <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
-
-        
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -103,7 +83,6 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
@@ -120,29 +99,23 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Triangle From Scratch</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -150,8 +123,6 @@
                         </ul>
                     </div>
                 </div>
-                
-
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
@@ -163,11 +134,11 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#win32-window-cleanup" id="win32-window-cleanup">Win32 Window Cleanup</a></h1>
+                        <h1 id="win32-window-cleanup"><a class="header" href="#win32-window-cleanup">Win32 Window Cleanup</a></h1>
 <p>During our introduction to Win32 I said that we'd just write all our code into <code>main.rs</code>,
 and then we could sort it into the library later.</p>
 <p>Well, later is now.</p>
-<h2><a class="header" href="#new-files" id="new-files">New Files</a></h2>
+<h2 id="new-files"><a class="header" href="#new-files">New Files</a></h2>
 <p>This isn't very hard.
 Cargo follows a &quot;convention over configuration&quot; style,
 so as long as we do what it expects we won't even have to change <code>Cargo.toml</code> or anything.</p>
@@ -200,7 +171,7 @@ pub mod win32;
 <span class="boring">}
 </span></code></pre></pre>
 <p>Now, if we're on windows, we'll be able to use our nice <code>win32</code> module.</p>
-<h2><a class="header" href="#put-the-declarations-in-the-library" id="put-the-declarations-in-the-library">Put The Declarations In The Library</a></h2>
+<h2 id="put-the-declarations-in-the-library"><a class="header" href="#put-the-declarations-in-the-library">Put The Declarations In The Library</a></h2>
 <p>Okay first we put every single type, struct, const, and extern declaration into <code>win32.rs</code>.
 We also have to make sure that all the fields and types are marked as <code>pub</code>.</p>
 <p>Then we put a <code>use triangle_from_scratch::win32::*;</code> in our program.</p>
@@ -209,7 +180,7 @@ but the program should build and run exactly as before.</p>
 <p>Also, I'm going to remove the <code>allow</code> attributes at the top of the <code>main.rs</code>,
 and then convert the file to standard Rust naming for all the variables.
 This doesn't make the program do better things, but it helps people read it.</p>
-<h2><a class="header" href="#we-got-too-much-unsafe" id="we-got-too-much-unsafe">We Got Too Much Unsafe</a></h2>
+<h2 id="we-got-too-much-unsafe"><a class="header" href="#we-got-too-much-unsafe">We Got Too Much Unsafe</a></h2>
 <p>All this <code>unsafe</code> code isn't great.
 Having <code>unsafe</code> code around means that if we aren't careful we don't get &quot;just&quot; a wrong output or an unexpected panic,
 instead we get some sort of <em>Undefined Behavior</em> (UB).
@@ -247,7 +218,7 @@ not everywhere all over the codebase.</p>
 <p>I know, &quot;put it in a function&quot; is a very basic concept.
 You could have thought of that too, I'm sure.
 Still, sometimes it helps just to put the plan into words, even if it seems obvious.</p>
-<h2><a class="header" href="#safe-wrapping-getmodulehandlew" id="safe-wrapping-getmodulehandlew">Safe Wrapping <code>GetModuleHandleW</code></a></h2>
+<h2 id="safe-wrapping-getmodulehandlew"><a class="header" href="#safe-wrapping-getmodulehandlew">Safe Wrapping <code>GetModuleHandleW</code></a></h2>
 <p>Alright so what can we <em>actually</em> make into safe functions?</p>
 <p>Well the first thing the program does is call <code>GetModuleHandleW(null())</code>.
 Is that legal?
@@ -281,7 +252,7 @@ pub fn get_process_handle() -&gt; HMODULE {
   // ...
 </code></pre></pre>
 <p>No <code>unsafe</code> block! One less thing to audit!</p>
-<h2><a class="header" href="#safe-wrapping-loadcursorw" id="safe-wrapping-loadcursorw">Safe Wrapping <code>LoadCursorW</code></a></h2>
+<h2 id="safe-wrapping-loadcursorw"><a class="header" href="#safe-wrapping-loadcursorw">Safe Wrapping <code>LoadCursorW</code></a></h2>
 <p>So we go down a bit, the next <code>unsafe</code> function is <code>LoadCursorW</code>.
 That one gave us some trouble for quite a while.
 I was passing the wrong argument in the first position,
@@ -396,7 +367,7 @@ it's not actually making any resources we have to free up later.</p>
 Of course, using <code>unwrap</code> isn't a very robust way to solve problems.
 It's <em>absolutely</em> not allowed in a good library (always pass the error back up!),
 but in a binary it's &quot;sorta okay, I guess&quot;, particularly since this is a demo.</p>
-<h2><a class="header" href="#partial-wrapping-registerclassw" id="partial-wrapping-registerclassw">Partial Wrapping <code>RegisterClassW</code></a></h2>
+<h2 id="partial-wrapping-registerclassw"><a class="header" href="#partial-wrapping-registerclassw">Partial Wrapping <code>RegisterClassW</code></a></h2>
 <p><em>Partial</em> wrapping?
 I can hear you asking.</p>
 <p>Yeah, you can't always make it safe.
@@ -452,7 +423,7 @@ We can't even forget to check for an error any more,
 someone else already did that for us.</p>
 <p>Still, the error case is very wonky.
 That needs a fix.</p>
-<h2><a class="header" href="#safe-wrapping-getlasterror" id="safe-wrapping-getlasterror">Safe Wrapping <code>GetLastError</code></a></h2>
+<h2 id="safe-wrapping-getlasterror"><a class="header" href="#safe-wrapping-getlasterror">Safe Wrapping <code>GetLastError</code></a></h2>
 <p>I'm pretty sure I remember how <a href="https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror">GetLastError</a>
 worked.
 It was super simple, right?
@@ -482,7 +453,7 @@ Let's just have a quick look at <code>FormatMessage</code> and... oh... oh my...
 You see that function signature?
 There's flags, there's pointers, there's even a <code>va_list</code> thing we don't know about.
 Oof.</p>
-<h2><a class="header" href="#a-newtype-for-the-error-code" id="a-newtype-for-the-error-code">A Newtype For The Error Code</a></h2>
+<h2 id="a-newtype-for-the-error-code"><a class="header" href="#a-newtype-for-the-error-code">A Newtype For The Error Code</a></h2>
 <p>Okay, okay.
 When there's a lot to do, one step at a time is usually the best way to do it.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
@@ -805,7 +776,7 @@ It's not like we even have to do anything, it's all default methods:</p>
 </span>impl std::error::Error for Win32Error {}
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#window-creation" id="window-creation">Window Creation</a></h2>
+<h2 id="window-creation"><a class="header" href="#window-creation">Window Creation</a></h2>
 <p>The next <code>unsafe</code> function that our <code>main</code> calls is <code>CreateWindowExW</code>.
 This one is one heck of a swiss-army-chainsaw of a function.
 See, it turns out that, in Win32, not only are the things we think of as windows &quot;windows&quot;,
@@ -898,7 +869,7 @@ With the styles we're using, this will be the argument to the <code>WM_NCCREATE<
 </span></code></pre></pre>
 <p>That's a <em>lot</em> less for the caller to think about.
 We can call it at moderate improvement.</p>
-<h2><a class="header" href="#messages" id="messages">Messages</a></h2>
+<h2 id="messages"><a class="header" href="#messages">Messages</a></h2>
 <p>Next would be <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow">ShowWindow</a>,
 but I'm not sure we can provide much help there.
 We don't have a general window abstraction where we can be sure that a <code>HWND</code> is real or not.
@@ -997,7 +968,7 @@ everything in the message is what the operating system said,
 so we know the message content is &quot;real&quot; content.
 However, if we put a safe version of <code>DispatchMessageW</code> into our library,
 that library code wouldn't actually be correct for all possible message inputs.</p>
-<h2><a class="header" href="#getset-window-long-pointer" id="getset-window-long-pointer">Get/Set Window Long Pointer</a></h2>
+<h2 id="getset-window-long-pointer"><a class="header" href="#getset-window-long-pointer">Get/Set Window Long Pointer</a></h2>
 <p>When we're using <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptrw">SetWindowLongPtrW</a>,
 and also the <code>Get</code> version,
 there's a lot of options going on.
@@ -1154,7 +1125,7 @@ pub unsafe fn get_window_userdata&lt;T&gt;(hwnd: HWND) -&gt; Result&lt;*mut T, W
     }
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#postquitmessage" id="postquitmessage">PostQuitMessage</a></h2>
+<h2 id="postquitmessage"><a class="header" href="#postquitmessage">PostQuitMessage</a></h2>
 <p>This one is easy to make safe:
 you give it an exit code, and that exit code goes with the WM_QUIT message you get back later on.</p>
 <p>There's nothing that can go wrong, so we just wrap it.</p>
@@ -1174,7 +1145,7 @@ pub fn post_quit_message(exit_code: c_int) {
 <span class="boring">}
 </span></code></pre></pre>
 <p>And then we just put that as the last line of the <code>WM_DESTROY</code> branch.</p>
-<h2><a class="header" href="#beginpaint" id="beginpaint">BeginPaint</a></h2>
+<h2 id="beginpaint"><a class="header" href="#beginpaint">BeginPaint</a></h2>
 <p>Our next target is <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-beginpaint">BeginPaint</a>,
 which is another thing that's simple to make easier to use when you've got Rust types available.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
@@ -1199,7 +1170,7 @@ pub unsafe fn begin_paint(
 }
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#fillrect" id="fillrect">FillRect</a></h2>
+<h2 id="fillrect"><a class="header" href="#fillrect">FillRect</a></h2>
 <p>Using <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect">FillRect</a>
 you can paint using an HBRUSH <em>or</em> a system color.</p>
 <p>We only want to support the system color path.
@@ -1272,7 +1243,7 @@ pub unsafe fn fill_rect_with_sys_color(
 }
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#endpaint" id="endpaint">EndPaint</a></h2>
+<h2 id="endpaint"><a class="header" href="#endpaint">EndPaint</a></h2>
 <p>You might think that <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-endpaint">EndPaint</a>
 has some sort of error code we're ignoring.
 It returns a BOOL right?
@@ -1307,7 +1278,7 @@ We'll call it a small win.</p>
       }
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#a-painting-closure" id="a-painting-closure">A Painting Closure</a></h2>
+<h2 id="a-painting-closure"><a class="header" href="#a-painting-closure">A Painting Closure</a></h2>
 <p>Is it easy to mess up the whole begin/end painting thing?
 Yeah, I could see that going wrong.
 One thing we might want to <em>try</em> is having a function that takes closure to do painting.</p>
@@ -1375,7 +1346,7 @@ Not too bad at all:</p>
 <p>What I like the most about this is that the user can still call <code>begin_paint</code> and <code>end_paint</code> on their own if they want.
 Because maybe we make some abstraction workflow thing that doesn't work for them,
 and they can just skip around our thing if that's the case.</p>
-<h2><a class="header" href="#using-the-exit-code" id="using-the-exit-code">Using The Exit Code</a></h2>
+<h2 id="using-the-exit-code"><a class="header" href="#using-the-exit-code">Using The Exit Code</a></h2>
 <p>One thing we don't do is pass along the <code>wParam</code> from the <code>MSG</code> struct when we see <code>WM_QUIT</code>.
 We're <em>supposed</em> to pass that as the exit code of our process.
 For this, we can use <code>std::process:exit</code>, and then pass the value, instead of just breaking the loop.</p>
@@ -1399,7 +1370,7 @@ For this, we can use <code>std::process:exit</code>, and then pass the value, in
   }
 <span class="boring">}
 </span></code></pre></pre>
-<h2><a class="header" href="#done" id="done">Done</a></h2>
+<h2 id="done"><a class="header" href="#done">Done</a></h2>
 <p>Is our program perfect?
 Naw, but I think it's good enough for now.</p>
 
@@ -1407,67 +1378,38 @@ Naw, but I think it's good enough for now.</p>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="../opening_a_window/win32.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
-
-                        
                             <a rel="next" href="../loading_opengl/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
-                        
-
                         <div style="clear: both"></div>
                     </nav>
                 </div>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="../opening_a_window/win32.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
-
-                
                     <a rel="next" href="../loading_opengl/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
-                
             </nav>
 
         </div>
 
-        
-
-        
-
-        
-
-        
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
-        
-
-        
-
-        
         <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        
-
         <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
-        
-
-        
-
     </body>
 </html>

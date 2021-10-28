@@ -4,47 +4,27 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>UTF-16 Literals - Triangle From Scratch</title>
-        
-        
-
-
         <!-- Custom HTML head -->
-        
-
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        
         <link rel="icon" href="../favicon.svg">
-        
-        
         <link rel="shortcut icon" href="../favicon.png">
-        
         <link rel="stylesheet" href="../css/variables.css">
         <link rel="stylesheet" href="../css/general.css">
         <link rel="stylesheet" href="../css/chrome.css">
-        
         <link rel="stylesheet" href="../css/print.css" media="print">
-        
-
         <!-- Fonts -->
         <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="../fonts/fonts.css">
-        
-
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="../highlight.css">
         <link rel="stylesheet" href="../tomorrow-night.css">
         <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
-
-        
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -103,7 +83,6 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
@@ -120,29 +99,23 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Triangle From Scratch</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -150,8 +123,6 @@
                         </ul>
                     </div>
                 </div>
-                
-
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
@@ -164,19 +135,19 @@
                 <div id="content" class="content">
                     <main>
                         <p>(Note: Thanks to <a href="https://github.com/Plecra">Plecra</a> for helping with the code for this article.)</p>
-<h1><a class="header" href="#utf-16-literals" id="utf-16-literals">UTF-16 Literals</a></h1>
+<h1 id="utf-16-literals"><a class="header" href="#utf-16-literals">UTF-16 Literals</a></h1>
 <p>Rust literals are textual content encoded as UTF-8.</p>
 <p>Sometimes we want our textual content in other encodings instead.</p>
 <p>This can be done at runtime,
 but why do at runtime what you could be doing at compile time?</p>
-<h2><a class="header" href="#what-is-unicode" id="what-is-unicode">What is Unicode?</a></h2>
+<h2 id="what-is-unicode"><a class="header" href="#what-is-unicode">What is Unicode?</a></h2>
 <p>Unicode is a huge pile of nonsense, that's what it is.</p>
 <p>There's an old article from 2003 called
 <a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!)</a>,
 and the title of that article is correct.</p>
 <p>You should stop and read it if you haven't,
 and from here on I'm going to assume you've read it.</p>
-<h2><a class="header" href="#const-fn" id="const-fn"><code>const fn</code></a></h2>
+<h2 id="const-fn"><a class="header" href="#const-fn"><code>const fn</code></a></h2>
 <p>In Rust, if you want to do something at compile time you must use a <code>const fn</code>.
 However, Rust <code>const fn</code> is only <em>partly</em> implemented within the language.
 There is much that is not yet done,
@@ -185,7 +156,7 @@ and most importantly <code>const fn</code> doesn't support traits.</p>
 For one, we can't use normal iterators.
 Another, we can't use string slice indexing.</p>
 <p>So we'll have to write some <code>const fn</code> stuff without using traits.</p>
-<h2><a class="header" href="#break_off_code_point" id="break_off_code_point"><code>break_off_code_point</code></a></h2>
+<h2 id="break_off_code_point"><a class="header" href="#break_off_code_point"><code>break_off_code_point</code></a></h2>
 <p>First, we want a <code>const fn</code> way to break a code point off the front of a utf-8 byte slice.
 Normally, we'd use <a href="https://doc.rust-lang.org/std/primitive.str.html#method.chars">str::chars</a>,
 but remember that there's no iterators here.
@@ -206,7 +177,7 @@ All of this might fail (such as if the input is an empty slice), so the output i
 </span></code></pre></pre>
 <p>As I mentioned above, we can't sub-slice a <code>&amp;str</code> value in a const context in current rust,
 so we'll have to deal directly in <code>&amp;[u8]</code> for now.</p>
-<h3><a class="header" href="#determine-the-next-code-points-byte-count" id="determine-the-next-code-points-byte-count">Determine the next code point's byte count</a></h3>
+<h3 id="determine-the-next-code-points-byte-count"><a class="header" href="#determine-the-next-code-points-byte-count">Determine the next code point's byte count</a></h3>
 <p>The first thing we do is decide how many bytes we're going to use from the input.</p>
 <p>As a &quot;default&quot; case, if we can't find a code point in the input we'll give none.</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
@@ -285,7 +256,7 @@ We're going to take a page from Rust's book and ignore that.
 We'll simply <em>assume</em> that the trailing bytes in a multi-byte sequence are valid.
 If a caller gives us bad input, we might give them bad output back.
 There's not an actual safety concern with it, so it's not a big deal.</p>
-<h3><a class="header" href="#compute-the-output-code-point" id="compute-the-output-code-point">Compute the output code point</a></h3>
+<h3 id="compute-the-output-code-point"><a class="header" href="#compute-the-output-code-point">Compute the output code point</a></h3>
 <p>So now we need to fill in the output side of the four cases.</p>
 <p>The one byte case is simple.
 We just return the value directly.</p>
@@ -390,7 +361,7 @@ fn test_break_off_code_point() {
 </span></code></pre></pre>
 <p>A passing test doesn't conclusively prove that our function works,
 but it at least shows that the function does what we expect (as far as we tested).</p>
-<h3><a class="header" href="#invalid-input" id="invalid-input">Invalid Input</a></h3>
+<h3 id="invalid-input"><a class="header" href="#invalid-input">Invalid Input</a></h3>
 <p>One thing we <em>don't</em> handle quite right is invalid input.
 Right now, our input is assumed to be correct.
 If the input doesn't match a case we expect, then we just give back <code>None</code>.
@@ -419,7 +390,7 @@ as the code point and consumes 1 byte if the current leading character is disall
 <p>It's still not perfectly conformant,
 because we've decided to skip on checking the trailing bytes for validity,
 but it's good enough in most cases that we'll make that trade.</p>
-<h2><a class="header" href="#count_utf16_code_units" id="count_utf16_code_units"><code>count_utf16_code_units</code></a></h2>
+<h2 id="count_utf16_code_units"><a class="header" href="#count_utf16_code_units"><code>count_utf16_code_units</code></a></h2>
 <p>Alright, so our goal was to re-encode utf-8 as utf-16.
 Now that we can iterate the code points of a utf-8 sequence,
 how are we going to build a utf-16 sequence?</p>
@@ -471,7 +442,7 @@ fn test_count_utf16_code_units() {
 <span class="boring">}
 </span></code></pre></pre>
 <p>Cool, so now we can const count the number of code units we'll need to have.</p>
-<h2><a class="header" href="#making-a-macro" id="making-a-macro">Making A Macro</a></h2>
+<h2 id="making-a-macro"><a class="header" href="#making-a-macro">Making A Macro</a></h2>
 <p>Okay, so now we want to input a string literal to something and get out a utf-16 literal.</p>
 <p>Sadly, we can't do this with a const fn.
 The output type would depend on the input value.
@@ -644,7 +615,7 @@ fn test_utf16_null() {
 <span class="boring">}
 </span></code></pre></pre>
 <p>All very good, I hope you had fun with this one.</p>
-<h2><a class="header" href="#crates" id="crates">Crates</a></h2>
+<h2 id="crates"><a class="header" href="#crates">Crates</a></h2>
 <p>If you want this sort of thing at home there's already some crates to do it:</p>
 <ul>
 <li><a href="https://docs.rs/utf16_lit">utf16_lit</a>
@@ -657,59 +628,32 @@ fn test_utf16_null() {
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="../appendix/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
-
-                        
-
                         <div style="clear: both"></div>
                     </nav>
                 </div>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="../appendix/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
-
-                
             </nav>
 
         </div>
 
-        
-
-        
-
-        
-
-        
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
-        
-
-        
-
-        
         <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        
-
         <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
-        
-
-        
-
     </body>
 </html>

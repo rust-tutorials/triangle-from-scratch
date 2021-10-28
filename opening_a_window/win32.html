@@ -4,47 +4,27 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Win32 - Triangle From Scratch</title>
-        
-        
-
-
         <!-- Custom HTML head -->
-        
-
-
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="A tutorial for drawing a triangle without any outside crates.">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
-        
         <link rel="icon" href="../favicon.svg">
-        
-        
         <link rel="shortcut icon" href="../favicon.png">
-        
         <link rel="stylesheet" href="../css/variables.css">
         <link rel="stylesheet" href="../css/general.css">
         <link rel="stylesheet" href="../css/chrome.css">
-        
         <link rel="stylesheet" href="../css/print.css" media="print">
-        
-
         <!-- Fonts -->
         <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="../fonts/fonts.css">
-        
-
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="../highlight.css">
         <link rel="stylesheet" href="../tomorrow-night.css">
         <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
-
-        
     </head>
     <body>
         <!-- Provide site root to javascript -->
@@ -103,7 +83,6 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
@@ -120,29 +99,23 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Triangle From Scratch</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -150,8 +123,6 @@
                         </ul>
                     </div>
                 </div>
-                
-
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script type="text/javascript">
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
@@ -163,19 +134,19 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#opening-a-win32-window" id="opening-a-win32-window">Opening a Win32 Window</a></h1>
+                        <h1 id="opening-a-win32-window"><a class="header" href="#opening-a-win32-window">Opening a Win32 Window</a></h1>
 <p>On Windows, the C oriented API is called &quot;Win32&quot;.</p>
 <p>There's also some C++ oriented APIs for interacting with Windows as well (called COM and WinRT).</p>
 <p>It's <em>much</em> easier for Rust to bind to and interact with a C oriented API than a C++ oriented API,
 so we'll start with just using Win32 to interact with Windows.</p>
-<h2><a class="header" href="#search-the-web" id="search-the-web">Search The Web</a></h2>
+<h2 id="search-the-web"><a class="header" href="#search-the-web">Search The Web</a></h2>
 <p>Okay, for the sake of the lesson let's pretend that <em>even I</em> don't know what to do.</p>
 <p>Let's start by asking the internet nicely.
 Something like <a href="https://duckduckgo.com/?q=open+a+window+win32">&quot;open a window win32&quot;</a> sounds right.
 Hey look, that <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">first result</a> is straight from Microsoft.
 It's a whole little tutorial on how to open a window.
 Perfect, just what we wanted.</p>
-<h2><a class="header" href="#starting-the-win32-windowing-tutorial" id="starting-the-win32-windowing-tutorial">Starting The Win32 Windowing Tutorial</a></h2>
+<h2 id="starting-the-win32-windowing-tutorial"><a class="header" href="#starting-the-win32-windowing-tutorial">Starting The Win32 Windowing Tutorial</a></h2>
 <p>Let's read the first paragraph of the <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
 that we just found...</p>
 <p>To summarize the opening portion:</p>
@@ -186,7 +157,7 @@ that we just found...</p>
 (or <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">WNDCLASSW</a>)</li>
 </ul>
 <p>Whoa, slow down, hold on, what's this structure thing? And why are there two versions?</p>
-<h3><a class="header" href="#ansi-and-wide" id="ansi-and-wide">ANSI and Wide</a></h3>
+<h3 id="ansi-and-wide"><a class="header" href="#ansi-and-wide">ANSI and Wide</a></h3>
 <p>All over the Win32 API you'll find stuff where there's an <code>A</code> version and a <code>W</code> version.
 This happens with functions that process textual data, as well as with structs associated with those functions.
 In this case of <code>WNDCLASSA</code> / <code>WNDCLASSW</code>, a window class has, as part of it, a menu name as well as a class name.
@@ -200,7 +171,7 @@ If you store anything other than ASCII data in an ANSI string, the results vary 
 These strings are UTF-16 encoded.
 This gives you consistent results while using all the world's writing systems.</li>
 </ul>
-<h4><a class="header" href="#what-does-this-mean-for-us-rust-users" id="what-does-this-mean-for-us-rust-users">What does this mean for us Rust users?</a></h4>
+<h4 id="what-does-this-mean-for-us-rust-users"><a class="header" href="#what-does-this-mean-for-us-rust-users">What does this mean for us Rust users?</a></h4>
 <p>Well, Rust string literals, and Rust's normal <code>String</code> and <code>&amp;str</code> types, are all UTF-8 encoded.
 This means there's a bit of a mismatch between what Windows expects and what we've usually got.</p>
 <p>UTF-8 is a <em>superset</em> of ASCII.
@@ -217,7 +188,7 @@ Oh, hey, look, <a href="https://doc.rust-lang.org/std/primitive.str.html#method.
 The only slight problem is that we can't use that in a <code>const</code> context (yet).
 It's not the worst to do a little runtime data mucking here and there, so we'll accept the overhead.
 The UTF-16 conversion is kinda just an &quot;unfortunate but accepted&quot; part of working with Windows.</p>
-<h3><a class="header" href="#reading-a-c-struct-declaration" id="reading-a-c-struct-declaration">Reading a C struct declaration</a></h3>
+<h3 id="reading-a-c-struct-declaration"><a class="header" href="#reading-a-c-struct-declaration">Reading a C struct declaration</a></h3>
 <p>Okay, so now we've picked that we're going to use <code>WNDCLASSW</code>.
 Let's look at the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassw">MSDN definition</a>:</p>
 <pre><code class="language-c">typedef struct tagWNDCLASSW {
@@ -252,7 +223,7 @@ Long ago when computers had segmented memory there were differences in the point
 These days computers aren't set up for that, so they're all just a normal pointer.
 The different names are still around for legacy compatability.</li>
 </ul>
-<h3><a class="header" href="#starting-our-rust-code" id="starting-our-rust-code">Starting Our Rust Code</a></h3>
+<h3 id="starting-our-rust-code"><a class="header" href="#starting-our-rust-code">Starting Our Rust Code</a></h3>
 <p>I think we've got enough on our plate to start writing things down in Rust.</p>
 <pre><code>Microsoft Windows [Version 10.0.19041.685]
 (c) 2020 Microsoft Corporation. All rights reserved.
@@ -311,7 +282,7 @@ error[E0412]: cannot find type `WNDPROC` in this scope
 <p>Okay, so, that should be obvious enough in terms of the error message.
 We can't declare a struct to have fields with types Rust doesn't know about.
 It's just not gonna fly.</p>
-<h3><a class="header" href="#how-big-is-an-int" id="how-big-is-an-int">How Big Is An Int?</a></h3>
+<h3 id="how-big-is-an-int"><a class="header" href="#how-big-is-an-int">How Big Is An Int?</a></h3>
 <p>Okay, start with just the first field on the list of missing types.
 Another web search for <a href="https://duckduckgo.com/?q=msdn+uint">&quot;msdn uint&quot;</a>,
 and we find a handy page of <a href="https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types">Windows Data Types</a>.</p>
@@ -355,7 +326,7 @@ type c_int = i32;
 <span class="boring">}
 </span></code></pre></pre>
 <p>Three of the fields aren't underlined in red already!</p>
-<h3><a class="header" href="#reading-a-c-function-declaration" id="reading-a-c-function-declaration">Reading a C function declaration</a></h3>
+<h3 id="reading-a-c-function-declaration"><a class="header" href="#reading-a-c-function-declaration">Reading a C function declaration</a></h3>
 <p>Now we <a href="https://duckduckgo.com/?q=WNDPROC+msdn">look up WNDPROC</a>,
 which is a <a href="https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms633573(v=vs.85)">WindowProc callback function</a>:</p>
 <pre><code class="language-c">LRESULT CALLBACK WindowProc(
@@ -417,7 +388,7 @@ we have to use <code>Option&lt;fn()&gt;</code> instead of just <code>fn()</code>
 <span class="boring">}
 </span></code></pre></pre>
 <p>VS Code says we're at 12 errors. Not so bad.</p>
-<h3><a class="header" href="#void-pointers" id="void-pointers">Void Pointers</a></h3>
+<h3 id="void-pointers"><a class="header" href="#void-pointers">Void Pointers</a></h3>
 <p>Now that we understand what we're supposed to be doing,
 it's just a matter of filling in definition after definition until all the errors go away.
 A lot of them are over on that <a href="https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types">Windows Data Types</a> page,
@@ -474,7 +445,7 @@ there's a <a href="https://doc.rust-lang.org/core/ffi/enum.c_void.html">c_void</
 </span>type PVOID = *mut core::ffi::c_void;
 <span class="boring">}
 </span></code></pre></pre>
-<h3><a class="header" href="#pointer-sized-types" id="pointer-sized-types">Pointer Sized Types</a></h3>
+<h3 id="pointer-sized-types"><a class="header" href="#pointer-sized-types">Pointer Sized Types</a></h3>
 <p>As we proceed down the list of errors,
 filling them in one at a time,
 things are fairly simple based on what we know to do so far,
@@ -574,11 +545,11 @@ pub struct WNDCLASSW {
 <span class="boring">}
 </span></code></pre></pre>
 <p>Phew.</p>
-<h2><a class="header" href="#continuing-the-windowing-tutorial" id="continuing-the-windowing-tutorial">Continuing The Windowing Tutorial</a></h2>
+<h2 id="continuing-the-windowing-tutorial"><a class="header" href="#continuing-the-windowing-tutorial">Continuing The Windowing Tutorial</a></h2>
 <p>I don't know if you recall,
 but like a decade ago when this article started we had a <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window">windowing tutorial</a>
 that we were working on.</p>
-<h3><a class="header" href="#making-a-wndclassw-value" id="making-a-wndclassw-value">Making a <code>WNDCLASSW</code> value</a></h3>
+<h3 id="making-a-wndclassw-value"><a class="header" href="#making-a-wndclassw-value">Making a <code>WNDCLASSW</code> value</a></h3>
 <p>It says that we need to fill in the window procedure, the hinstance, and the class name.
 The other stuff is optional, but those are essential.</p>
 <p>In the sample C++ code, we see this interesting line:</p>
@@ -646,7 +617,7 @@ It's a simple convention, but it keeps it obvious that the macro can go wrong if
 }
 </code></pre></pre>
 <p>And that's so much nicer, at least to my eyes.</p>
-<h3><a class="header" href="#writing-a-window-procedure" id="writing-a-window-procedure">Writing a Window Procedure</a></h3>
+<h3 id="writing-a-window-procedure"><a class="header" href="#writing-a-window-procedure">Writing a Window Procedure</a></h3>
 <p>The guide says</p>
 <blockquote>
 <p>We'll examine the window procedure in detail later. For now, just treat this as a forward reference.</p>
@@ -670,7 +641,7 @@ It's a simple convention, but it keeps it obvious that the macro can go wrong if
   wc.lpszClassName = todo!();
 }
 </code></pre></pre>
-<h3><a class="header" href="#getting-the-hinstance" id="getting-the-hinstance">Getting the HINSTANCE</a></h3>
+<h3 id="getting-the-hinstance"><a class="header" href="#getting-the-hinstance">Getting the HINSTANCE</a></h3>
 <p>This next part is a hair tricky to solve on your own.</p>
 <p>What the tutorial wants us to do is pass the <code>hInstance</code> value that we were given at the start of the <code>WinMain</code> function.
 Except the problem is that we're not writing a Windows C++ program so we don't have a WinMain function at all.
@@ -773,7 +744,7 @@ extern &quot;system&quot; {
   wc.lpszClassName = todo!();
 }
 </code></pre></pre>
-<h3><a class="header" href="#wide-strings" id="wide-strings">Wide Strings</a></h3>
+<h3 id="wide-strings"><a class="header" href="#wide-strings">Wide Strings</a></h3>
 <p>The last thing we need is one of those fancy <code>LPCWSTR</code> things.
 A &quot;long pointer to a C-style wide string&quot;.
 Well a long pointer is just a pointer.
@@ -844,7 +815,7 @@ It's still some nasty Undefined Behavior though.</p>
 <p>This way, the <code>sample_window_class_wn</code> binding holds the vector live,
 and the pointer can be used for as long as that binding lasts.
 In this case, to the end of the <code>main</code> function.</p>
-<h3><a class="header" href="#registering-the-window-class" id="registering-the-window-class">Registering The Window Class</a></h3>
+<h3 id="registering-the-window-class"><a class="header" href="#registering-the-window-class">Registering The Window Class</a></h3>
 <p>Okay, so our widow class request is all filled out, we just have to register it using <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassw">RegisterClassW</a>:</p>
 <pre><code class="language-cpp">ATOM RegisterClassW(
   const WNDCLASSW *lpWndClass
@@ -925,7 +896,7 @@ extern &quot;system&quot; {
   }
 }
 </code></pre></pre>
-<h2><a class="header" href="#creating-the-window" id="creating-the-window">Creating The Window</a></h2>
+<h2 id="creating-the-window"><a class="header" href="#creating-the-window">Creating The Window</a></h2>
 <p>VS Code says I'm at like 4500 words already, and we haven't even made our Window yet.</p>
 <blockquote>
 <p>To create a new instance of a window, call the <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw">CreateWindowEx</a> function:</p>
@@ -1089,7 +1060,7 @@ extern &quot;system&quot; {
 }
 </code></pre></pre>
 <p>And, finally, we can get a window to flicker on the screen!</p>
-<h2><a class="header" href="#handling-window-messages" id="handling-window-messages">Handling Window Messages</a></h2>
+<h2 id="handling-window-messages"><a class="header" href="#handling-window-messages">Handling Window Messages</a></h2>
 <p>We're on to the next page of the tutorial!</p>
 <p>Now we get to learn all about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/window-messages">Window Messages</a></p>
 <p>First we need to define this great <code>MSG</code> struct:</p>
@@ -1205,7 +1176,7 @@ However, we also see an eternally spinning mouse once it's open.
 We also <em>don't</em> see our program close when we close the window.
 It just continues to spin in the <code>loop</code>,
 and we have to exit it by pressing Ctrl+C in the command line.</p>
-<h2><a class="header" href="#writing-the-window-procedure" id="writing-the-window-procedure">Writing The Window Procedure</a></h2>
+<h2 id="writing-the-window-procedure"><a class="header" href="#writing-the-window-procedure">Writing The Window Procedure</a></h2>
 <p>Next up is <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/writing-the-window-procedure">Writing the Window Procedure</a>.</p>
 <p>That default window procedure we've been using so far is fine for most events.
 Usually it just ignores every event.
@@ -1306,7 +1277,7 @@ so then we don't need the <code>;</code> and braces,
 so rustfmt keeps it on a single line.
 I am <em>all about</em> that compact code stuff.</p>
 <p>Now we can open the window and click for it to close and the program actually terminates.</p>
-<h2><a class="header" href="#fixing-the-cursor-maybe" id="fixing-the-cursor-maybe">Fixing The Cursor (maybe?)</a></h2>
+<h2 id="fixing-the-cursor-maybe"><a class="header" href="#fixing-the-cursor-maybe">Fixing The Cursor (maybe?)</a></h2>
 <p>The mouse cursor is still kinda funky.
 It gets kinda... <em>stuck</em> with different icons.
 If you move the mouse into the window area from different sides,
@@ -1410,7 +1381,7 @@ it'll make the mouse cursor so the right thing for you.
 I don't have any idea if this is true or not.
 If it is true, then maybe once we add more to our program the mouse cursor will start working right.
 Let's move on, we can come back to this later.</p>
-<h2><a class="header" href="#painting-the-window" id="painting-the-window">Painting The Window</a></h2>
+<h2 id="painting-the-window"><a class="header" href="#painting-the-window">Painting The Window</a></h2>
 <p>The tutorial wants to tell us about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/painting-the-window">Painting The Window</a> next.</p>
 <p>So we have to accept a <code>WM_PAINT</code> message:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
@@ -1494,7 +1465,7 @@ const COLOR_WINDOW: u32 = 5;
 <p>Window looks the same as before,
 but if we fiddle with the brush value we can see it'll draw using other colors.
 Doesn't seem to fix the mouse though.</p>
-<h2><a class="header" href="#closing-the-window" id="closing-the-window">Closing The Window</a></h2>
+<h2 id="closing-the-window"><a class="header" href="#closing-the-window">Closing The Window</a></h2>
 <p>The tutorial page about <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/closing-the-window">Closing The Window</a>
 has a fun part where we can open a message box.
 I like the occasional message box, let's do that.</p>
@@ -1522,7 +1493,7 @@ Sometimes a value will be used as more than one type of number, then you'll have
 In C the number types can just automatically convert, so they don't really care.
 In Rust, that's not the case, so I just try to pick a default type for the value.
 So that most of the time I can write <code>MY_CONST</code> and not <code>MY_CONST as _</code>.</p>
-<h2><a class="header" href="#managing-application-state" id="managing-application-state">Managing Application State</a></h2>
+<h2 id="managing-application-state"><a class="header" href="#managing-application-state">Managing Application State</a></h2>
 <p>Ah, we're back to a slightly tricky part of things.
 In <a href="https://docs.microsoft.com/en-us/windows/win32/learnwin32/managing-application-state-">Managing Application State</a>
 we get some notions thrown around like &quot;use just global variables until it gets too complicated!&quot;
@@ -1753,12 +1724,12 @@ Of course, we should only do this right as the window is being destroyed.</p>
 <span class="boring">}
 </span></code></pre></pre>
 <p>And finally, I think we're done!</p>
-<h2><a class="header" href="#hey-what-about-the-triangle" id="hey-what-about-the-triangle">Hey, What About The Triangle?</a></h2>
+<h2 id="hey-what-about-the-triangle"><a class="header" href="#hey-what-about-the-triangle">Hey, What About The Triangle?</a></h2>
 <p>Well, there's several ways to draw a triangle in windows.
 You can use DirectX, OpenGL, Vulkan, probably some other ways I don't even know about.
 This lesson is going to stop at <em>just</em> the window creation part.
 Then, each other lesson on a particular Windows drawing API can assume you've read this as a baseline level of understanding.</p>
-<h2><a class="header" href="#fixing-that-stupid-cursor" id="fixing-that-stupid-cursor">Fixing That Stupid Cursor</a></h2>
+<h2 id="fixing-that-stupid-cursor"><a class="header" href="#fixing-that-stupid-cursor">Fixing That Stupid Cursor</a></h2>
 <p>Before I finished this, I really wanted to figure out what was going on with that cursor.</p>
 <p>So what I did was, first we want to handle the <code>WM_SETCURSOR</code> event,
 and then in the event we call the <code>SetCursor</code> function.</p>
@@ -1820,7 +1791,7 @@ wc.hCursor = unsafe { LoadCursorW(null_mut(), IDC_ARROW) };
 </span></code></pre></pre>
 <p>Well now our cursor works just fine!</p>
 <p>The day is saved!</p>
-<h2><a class="header" href="#windows_subsystem" id="windows_subsystem">windows_subsystem</a></h2>
+<h2 id="windows_subsystem"><a class="header" href="#windows_subsystem">windows_subsystem</a></h2>
 <p>A last note before we go.
 The Windows operating system has two &quot;subsystems&quot; that a program can target: &quot;console&quot; and &quot;windows&quot;.
 The only difference to us Rust folks is if the program gets a console allocated for it automatically by the system.</p>
@@ -1867,67 +1838,38 @@ That's not exactly the same as &quot;whenever it's a release build&quot;, but cl
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="../opening_a_window/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
-
-                        
                             <a rel="next" href="../opening_a_window/win32_cleanup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
-                        
-
                         <div style="clear: both"></div>
                     </nav>
                 </div>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="../opening_a_window/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
-
-                
                     <a rel="next" href="../opening_a_window/win32_cleanup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
-                
             </nav>
 
         </div>
 
-        
-
-        
-
-        
-
-        
         <script type="text/javascript">
             window.playground_copyable = true;
         </script>
-        
-
-        
-
-        
         <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        
-
         <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
         <script src="../book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
-        
-
-        
-
     </body>
 </html>
