@@ -1455,7 +1455,7 @@ pub unsafe fn do_wglChoosePixelFormatARB(
   let f_ptr = match float_attrs.last() {
     Some([k, _v]) => {
       if *k == 0.0 {
-        int_attrs.as_ptr()
+        float_attrs.as_ptr()
       } else {
         return Err(app_err);
       }
