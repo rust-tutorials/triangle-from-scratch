@@ -1384,7 +1384,7 @@ And we need to adjust our window procedure:
           println!("Error while getting the userdata ptr for cleanup: {}", e)
         }
       }
-      post_quit_message(0);
+      unsafe { post_quit_message(0) };
     }
     WM_PAINT => match get_window_userdata::<WindowData>(hwnd) {
       Ok(ptr) if !ptr.is_null() => {

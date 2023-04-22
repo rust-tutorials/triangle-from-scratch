@@ -33,7 +33,7 @@ fn main() {
         if msg.message == WM_QUIT {
           std::process::exit(msg.wParam as i32);
         }
-        translate_message(&msg);
+        unsafe { translate_message(&msg) };
         unsafe {
           DispatchMessageW(&msg);
         }
@@ -83,7 +83,7 @@ pub unsafe extern "system" fn window_procedure(
           println!("Error while getting the userdata ptr to clean it up: {}", e)
         }
       }
-      post_quit_message(0);
+      unsafe { post_quit_message(0) };
     }
     WM_PAINT => {
       match get_window_userdata::<i32>(hwnd) {

@@ -143,7 +143,7 @@ fn main() {
         if msg.message == WM_QUIT {
           std::process::exit(msg.wParam as i32);
         }
-        translate_message(&msg);
+        unsafe { translate_message(&msg) };
         unsafe {
           DispatchMessageW(&msg);
         }
@@ -197,7 +197,7 @@ pub unsafe extern "system" fn window_procedure(
           eprintln!("WM_DESTROY> Error getting userdata ptr: {}", e)
         }
       }
-      post_quit_message(0);
+      unsafe { post_quit_message(0) };
     }
     WM_PAINT => match get_window_userdata::<WindowData>(hwnd) {
       Ok(ptr) if !ptr.is_null() => {

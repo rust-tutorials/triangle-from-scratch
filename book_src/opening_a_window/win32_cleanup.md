@@ -886,7 +886,7 @@ And we'll make this callable as a safe operation,
 /// Sets the thread-local last-error code value.
 ///
 /// See [`SetLastError`](https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror)
-pub fn set_last_error(e: Win32Error) {
+pub unsafe fn set_last_error(e: Win32Error) {
   unsafe { SetLastError(e.0) }
 }
 ```
@@ -902,7 +902,7 @@ We'll make it generic over whatever pointer type you want:
 pub unsafe fn set_window_userdata<T>(
   hwnd: HWND, ptr: *mut T,
 ) -> Result<*mut T, Win32Error> {
-  set_last_error(Win32Error(0));
+  unsafe { set_last_error(Win32Error(0)) };
   let out = SetWindowLongPtrW(hwnd, GWLP_USERDATA, ptr as LONG_PTR);
   if out == 0 {
     // if output is 0, it's only a "real" error if the last_error is non-zero
@@ -944,7 +944,7 @@ which is good in this case, because you don't want to forget the type:
 ///
 /// [`GetWindowLongPtrW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongptrw)
 pub unsafe fn get_window_userdata<T>(hwnd: HWND) -> Result<*mut T, Win32Error> {
-  set_last_error(Win32Error(0));
+  unsafe { set_last_error(Win32Error(0)) };
   let out = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
   if out == 0 {
     // if output is 0, it's only a "real" error if the last_error is non-zero
@@ -1012,7 +1012,7 @@ There's nothing that can go wrong, so we just wrap it.
 /// loop eventually gets.
 ///
 /// [`PostQuitMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postquitmessage)
-pub fn post_quit_message(exit_code: c_int) {
+pub unsafe fn post_quit_message(exit_code: c_int) {
   unsafe { PostQuitMessage(exit_code) }
 }
 ```
