@@ -1458,7 +1458,6 @@ And we check for them in our window procedure:
   match Msg {
     WM_NCCREATE => {
       println!("NC Create");
-      return 1;
     }
     WM_CREATE => println!("Create"),
 ```
