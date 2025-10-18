@@ -1406,6 +1406,15 @@ pub unsafe extern "system" fn window_procedure(
 }
 ```
 
+And update our window class to use window_procedure:
+```rust
+fn main() {
+  // ...
+  wc.lpfnWndProc = Some(window_procedure);
+  // ...
+}
+```
+
 Window looks the same as before,
 but if we fiddle with the brush value we can see it'll draw using other colors.
 Doesn't seem to fix the mouse though.
