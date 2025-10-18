@@ -1406,7 +1406,7 @@ pub unsafe extern "system" fn window_procedure(
 }
 ```
 
-And update our window class to use window_procedure:
+And update our window class to use `window_procedure`:
 ```rust
 fn main() {
   // ...
